@@ -36,6 +36,7 @@ Projekt stosuje [Semantic Versioning](https://semver.org/lang/pl/).
 ### Added
 
 - Dodano `AGENTS.md` z instrukcjami pracy dla agentów.
+- Dodano dokumentację projektu w `README.md`, `CONTRIBUTING.md` i `CLAUDE.md`.
 
 ---
 
