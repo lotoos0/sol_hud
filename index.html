@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="pl">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sol HUD</title>
+    <link rel="stylesheet" href="style.css">
+  </head>
+  <body>
+    <div id="app">
+      <div id="start-screen">
+        <div class="version-badge">v0.1.0 MVP</div>
+        <h2>SOL TRADER HUD</h2>
+        <label>
+          Lives (1-5):
+          <input id="cfg-lives" type="number" min="1" max="5" value="3">
+        </label>
+        <label>
+          SOL Limit:
+          <input id="cfg-sol" type="number" step="0.01" value="0.15">
+        </label>
+        <button id="btn-start" type="button">START SESSION</button>
+      </div>
+
+      <div id="hud-container" hidden>
+        <div id="mini-bar" class="mini-bar">
+          <div class="lives-display" aria-label="Lives">
+            <span>❤️</span>
+            <span>❤️</span>
+            <span>❤️</span>
+            <span>🖤</span>
+          </div>
+          <div class="stats-mini">W:0 L:0 0%</div>
+          <div class="version-mini">v0.1.0</div>
+          <button id="btn-expand" type="button" aria-label="Expand">≡</button>
+        </div>
+
+        <div id="expanded-panel" hidden>
+          <div class="panel-header">
+            <div class="lives-row" aria-label="Lives">
+              <span>❤️</span>
+              <span>❤️</span>
+              <span>❤️</span>
+              <span>🖤</span>
+            </div>
+            <div class="version-mini">v0.1.0 MVP</div>
+            <button id="btn-collapse" type="button" aria-label="Collapse">×</button>
+          </div>
+
+          <div class="stats-grid">
+            <div>
+              <span>Attempts</span>
+              <strong>0</strong>
+            </div>
+            <div>
+              <span>Wins</span>
+              <strong>0</strong>
+            </div>
+            <div>
+              <span>Win Rate</span>
+              <strong>0%</strong>
+            </div>
+            <div>
+              <span>Passive</span>
+              <strong>OFF</strong>
+            </div>
+          </div>
+
+          <div class="checklist">
+            <label><input type="checkbox"> Setup aligned</label>
+            <label><input type="checkbox"> Trend confirmed</label>
+            <label><input type="checkbox"> Risk accepted</label>
+            <label><input type="checkbox"> News checked</label>
+          </div>
+
+          <div id="session-over" hidden>Session over. GG.</div>
+
+          <div class="action-buttons">
+            <button id="btn-entry" type="button">✅ ENTRY</button>
+            <button id="btn-pass" type="button">❌ PASS</button>
+            <button id="btn-sl" type="button">💀 SL</button>
+          </div>
+
+          <button id="btn-end-session" type="button">End Session</button>
+
+          <div id="summary-screen" hidden>
+            <h3>Session Summary</h3>
+            <div id="summary-stats"></div>
+            <button id="btn-end-export" type="button">Export &amp; New Session</button>
+            <button id="btn-end-only" type="button">End Session</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script src="renderer.js"></script>
+  </body>
+</html>
