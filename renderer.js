@@ -56,6 +56,20 @@ const checklistKeys = ['chart', 'narrative', 'bubblemap', 'holders'];
 
 const sessionOver = document.getElementById('session-over');
 
+function validateStartInputs() {
+  const lives = Number(livesInput.value);
+  const solLimit = Number(solInput.value);
+  const livesErr = !Number.isInteger(lives) || lives < 1 || lives > 5;
+  const solErr = !Number.isFinite(solLimit) || solLimit < 0.01 || solLimit > 10.0;
+  const valid = !livesErr && !solErr;
+
+  livesInput.classList.toggle('input-error', livesErr);
+  solInput.classList.toggle('input-error', solErr);
+  startButton.disabled = !valid;
+
+  return { valid, livesErr, solErr };
+}
+
 async function generateSessionId() {
   const today = new Date().toISOString().slice(0, 10);
   let sessionIds = [];
@@ -336,10 +350,15 @@ endExportButton.addEventListener('click', async () => {
 endOnlyButton.addEventListener('click', resetToStartScreen);
 
 startButton.addEventListener('click', async () => {
-  const lives = Math.min(Math.max(parseInt(livesInput.value, 10) || 3, 1), 5);
-  const solLimit = parseFloat(solInput.value) || 0.15;
+  const { valid } = validateStartInputs();
+
+  if (!valid) {
+    return;
+  }
 
   startButton.disabled = true;
+  const lives = Number(livesInput.value);
+  const solLimit = Number(solInput.value);
   await initSession({ lives, solLimit });
   startScreen.hidden = true;
   hudContainer.hidden = false;
@@ -431,6 +450,10 @@ function resetToStartScreen() {
   renderAll();
 }
 
+[livesInput, solInput].forEach((input) => {
+  input.addEventListener('input', validateStartInputs);
+});
+
 async function init() {
   try {
     session.windowPos = await window.electronAPI.loadLastPosition();
@@ -442,6 +465,7 @@ async function init() {
   startScreen.hidden = false;
   await window.electronAPI.resizeWindow(180);
   window.electronAPI.setIgnoreMouse(false);
+  validateStartInputs();
   renderAll();
 }
 
