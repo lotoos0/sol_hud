@@ -31,6 +31,38 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [0.5.2] - 2026-04-25
+
+### Fixed
+
+- Increased expanded HUD window height again to prevent the end-session controls from touching the bottom edge.
+- Updated visible application version labels to `0.5.2`.
+
+---
+
+## [0.5.1] - 2026-04-25
+
+### Fixed
+
+- Increased expanded HUD window height so bottom controls remain visible.
+- Updated visible application version labels to `0.5.1`.
+
+---
+
+## [0.5.0] - 2026-04-25
+
+### Added
+
+- Added `storage/questStore.js` for loading and saving quest state.
+- Added read-only quest definitions loading from `data/quests_definitions.json`.
+- Added `storage/questStore.js` to the local JavaScript syntax validation script.
+
+### Changed
+
+- Updated visible application version labels to `0.5.0`.
+
+---
+
 ## [0.4.1] - 2026-04-25
 
 ### Changed
@@ -109,7 +141,10 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ---
 
-[Unreleased]: https://github.com/lotoos0/sol_hud/compare/v0.4.1...HEAD
+[Unreleased]: https://github.com/lotoos0/sol_hud/compare/v0.5.2...HEAD
+[0.5.2]: https://github.com/lotoos0/sol_hud/compare/v0.5.1...v0.5.2
+[0.5.1]: https://github.com/lotoos0/sol_hud/compare/v0.5.0...v0.5.1
+[0.5.0]: https://github.com/lotoos0/sol_hud/compare/v0.4.1...v0.5.0
 [0.4.1]: https://github.com/lotoos0/sol_hud/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/lotoos0/sol_hud/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/lotoos0/sol_hud/compare/v0.2.0...v0.3.0
