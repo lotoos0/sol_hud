@@ -6,7 +6,7 @@ const RANK_TABLE = [
   { rank: 'Strategist', rank_level: 4, xp_required: 500, feature_unlock: 'boss_fights' },
   { rank: 'Specialist', rank_level: 5, xp_required: 900, feature_unlock: 'achievements' },
   { rank: 'Veteran', rank_level: 6, xp_required: 1400, feature_unlock: 'advanced_stats' },
-  { rank: 'Legend', rank_level: 7, xp_required: 2200, feature_unlock: 'prestige' }
+  { rank: 'GIGACHAD', rank_level: 7, xp_required: 2200, feature_unlock: 'prestige' }
 ];
 const XP_TABLE = {
   entry_4_4: 15,
@@ -40,6 +40,9 @@ function createDefaultSession() {
     expanded: false,
     isComeback: false,
     rewardsApplied: false,
+    recentResults: [],
+    tilt_events: [],
+    activeBossFight: null,
     checklist: {
       chart: false,
       narrative: false,
@@ -57,7 +60,11 @@ function createDefaultSession() {
 const session = createDefaultSession();
 
 let passiveTimer = null;
+let timerInterval = null;
+let tiltCooldownUntil = 0;
 let playerData = null;
+let questDefs = null;
+let questsState = null;
 
 const startScreen = document.getElementById('start-screen');
 const livesInput = document.getElementById('cfg-lives');
@@ -79,6 +86,14 @@ const endOnlyButton = document.getElementById('btn-end-only');
 const pnlInput = document.getElementById('pnl-input');
 const pnlDisplay = document.getElementById('pnl-display');
 const statsMini = document.querySelector('.stats-mini');
+const streakDisplay = document.getElementById('streak-display');
+const sessionTimer = document.getElementById('session-timer');
+const tiltAlert = document.getElementById('tilt-alert');
+const bossFightBanner = document.getElementById('boss-fight-banner');
+const bossFightTitle = document.getElementById('boss-fight-title');
+const bossFightDesc = document.getElementById('boss-fight-desc');
+const bossTimer = document.getElementById('boss-timer');
+const bossDefeatedToast = document.getElementById('boss-defeated-toast');
 const statsCards = Array.from(document.querySelectorAll('.stats-grid > div'));
 const checklistInputs = Array.from(document.querySelectorAll('.checklist input'));
 const checklistKeys = ['chart', 'narrative', 'bubblemap', 'holders'];
@@ -100,6 +115,14 @@ function getRankFromXP(xp) {
   }
 
   return currentRank;
+}
+
+function hasRankLevel(minLevel) {
+  return playerData && Number(playerData.rank_level) >= minLevel;
+}
+
+function isGigachadRank() {
+  return playerData && (String(playerData.rank).toUpperCase() === 'GIGACHAD' || playerData.rank_level >= 7);
 }
 
 function getCheckedCount() {
@@ -187,6 +210,21 @@ function showToast(message) {
 
   setTimeout(() => {
     loginBonusToast.hidden = true;
+  }, 3000);
+}
+
+function showTimedElement(element, className) {
+  if (!element) {
+    return;
+  }
+
+  element.hidden = false;
+  element.classList.remove(className);
+  void element.offsetWidth;
+  element.classList.add(className);
+
+  setTimeout(() => {
+    element.hidden = true;
   }, 3000);
 }
 
@@ -350,6 +388,300 @@ async function applySessionRewards() {
   await window.electronAPI.savePlayer(playerData);
 }
 
+function ensureQuestStateShape(state) {
+  state.boss_fight = {
+    active: state.boss_fight?.active || state.active_boss_fight || null,
+    last_triggered: state.boss_fight?.last_triggered || null
+  };
+
+  return state;
+}
+
+function getHotColdState() {
+  if (session.recentResults.length < 3) {
+    return 'neutral';
+  }
+
+  if (session.recentResults.every((result) => result === 'win')) {
+    return 'hot';
+  }
+
+  if (session.recentResults.every((result) => result === 'loss')) {
+    return 'cold';
+  }
+
+  return 'neutral';
+}
+
+function renderHotCold() {
+  const state = getHotColdState();
+
+  hudContainer.classList.toggle('hot-border', state === 'hot');
+  hudContainer.classList.toggle('cold-border', state === 'cold');
+}
+
+function renderStreak() {
+  if (!streakDisplay || !playerData || playerData.rank_level < 3) {
+    streakDisplay.hidden = true;
+    return;
+  }
+
+  const streak = Number(playerData.streak) || 0;
+  streakDisplay.hidden = false;
+  streakDisplay.classList.toggle('streak-positive', streak > 0);
+  streakDisplay.classList.toggle('streak-negative', streak < 0);
+
+  if (streak > 0) {
+    streakDisplay.textContent = `🔥${streak}`;
+  } else if (streak < 0) {
+    streakDisplay.textContent = String(streak);
+  } else {
+    streakDisplay.textContent = '—';
+  }
+}
+
+function updateRecentResults(result) {
+  session.recentResults.push(result);
+
+  if (session.recentResults.length > 3) {
+    session.recentResults.shift();
+  }
+}
+
+function updateSessionTimer() {
+  if (!sessionTimer || !session.startedAt) {
+    return;
+  }
+
+  const elapsedSeconds = Math.max(
+    0,
+    Math.floor((Date.now() - new Date(session.startedAt).getTime()) / 1000)
+  );
+  const hours = Math.floor(elapsedSeconds / 3600);
+  const minutes = Math.floor((elapsedSeconds % 3600) / 60);
+  const seconds = elapsedSeconds % 60;
+
+  sessionTimer.textContent = [hours, minutes, seconds]
+    .map((value) => String(value).padStart(2, '0'))
+    .join(':');
+  hudContainer.classList.toggle('timer-warning', elapsedSeconds >= 7200);
+
+  if (bossTimer) {
+    bossTimer.textContent = sessionTimer.textContent;
+  }
+}
+
+function stopSessionTimer() {
+  clearInterval(timerInterval);
+  timerInterval = null;
+
+  if (sessionTimer) {
+    sessionTimer.hidden = true;
+  }
+
+  hudContainer.classList.remove('timer-warning');
+}
+
+function clearTiltClasses() {
+  hudContainer.classList.remove('tilt-yellow', 'tilt-blue', 'tilt-red');
+}
+
+function showTiltAlert(pattern, message, color) {
+  const className = `tilt-${color}`;
+  const now = Date.now();
+
+  session.tilt_events.push({
+    pattern,
+    at: new Date(now).toISOString(),
+    message
+  });
+
+  if (tiltAlert) {
+    tiltAlert.textContent = message;
+    tiltAlert.hidden = false;
+  }
+
+  clearTiltClasses();
+  hudContainer.classList.add(className);
+
+  if (pattern === 'C') {
+    tiltCooldownUntil = now + 3 * 60 * 1000;
+    checkEntryUnlock();
+    setTimeout(() => {
+      if (Date.now() >= tiltCooldownUntil) {
+        tiltCooldownUntil = 0;
+        tiltAlert.hidden = true;
+        clearTiltClasses();
+        checkEntryUnlock();
+      }
+    }, 3 * 60 * 1000);
+  } else {
+    setTimeout(() => {
+      if (tiltAlert) {
+        tiltAlert.hidden = true;
+      }
+      hudContainer.classList.remove(className);
+    }, 3000);
+  }
+
+  autoSave();
+}
+
+function checkTiltPatterns() {
+  if (!isGigachadRank()) {
+    return;
+  }
+
+  const now = Date.now();
+  const lastTenMinutes = session.trades.filter((trade) => {
+    return now - new Date(trade.at).getTime() <= 10 * 60 * 1000;
+  });
+  const recentSLCount = lastTenMinutes.filter((trade) => trade.type === 'SL').length;
+
+  if (recentSLCount >= 2) {
+    showTiltAlert('A', 'SLOW DOWN', 'yellow');
+  }
+
+  const lastSLIndex = session.trades.map((trade) => trade.type).lastIndexOf('SL');
+
+  if (lastSLIndex >= 0) {
+    const afterLastSL = session.trades.slice(lastSLIndex + 1);
+    const passStreakAfterSL =
+      afterLastSL.length >= 3 && afterLastSL.slice(-3).every((trade) => trade.type === 'PASS');
+
+    if (passStreakAfterSL) {
+      showTiltAlert('B', 'SYSTEM CHECK', 'blue');
+    }
+  }
+}
+
+function checkPassiveTiltPattern() {
+  if (!isGigachadRank()) {
+    return;
+  }
+
+  const lastSL = [...session.trades].reverse().find((trade) => trade.type === 'SL');
+
+  if (lastSL && Date.now() - new Date(lastSL.at).getTime() <= 2 * 60 * 1000) {
+    showTiltAlert('C', 'TAKE A BREAK', 'red');
+  }
+}
+
+function getBossMetric(metric) {
+  const sessionWon = session.attempts > 0 && session.wins / session.attempts > 0.5;
+
+  return {
+    locked_sessions: session.locked ? 1 : 0,
+    contained_red_sessions: !sessionWon && Math.abs(session.pnl_sol) <= (session.config.sol_limit || 0) ? 1 : 0,
+    disciplined_session_streak: playerData?.streak || 0,
+    attempts: session.attempts,
+    wins: session.wins,
+    losses: session.losses,
+    sl_hits: session.slHits,
+    passive_events: session.passiveEvents,
+    pnl_sol: session.pnl_sol
+  }[metric] ?? 0;
+}
+
+function isConditionMet(condition) {
+  const actual = getBossMetric(condition.metric);
+
+  if (condition.operator === '>=') {
+    return actual >= condition.value;
+  }
+
+  if (condition.operator === '>') {
+    return actual > condition.value;
+  }
+
+  if (condition.operator === '<=') {
+    return actual <= condition.value;
+  }
+
+  if (condition.operator === '<') {
+    return actual < condition.value;
+  }
+
+  return actual === condition.value;
+}
+
+async function checkAndTriggerBossFight() {
+  if (!questDefs || !questsState || session.activeBossFight || session.trades.length !== 2) {
+    return;
+  }
+
+  const today = todayString();
+
+  if (questsState.boss_fight?.last_triggered === today || Math.random() >= 0.3) {
+    return;
+  }
+
+  const bossFights = questDefs.boss_fights || [];
+  const selected = bossFights[Math.floor(Math.random() * bossFights.length)];
+
+  if (!selected) {
+    return;
+  }
+
+  session.activeBossFight = selected;
+  questsState.boss_fight = {
+    active: selected.id,
+    last_triggered: today
+  };
+  await window.electronAPI.saveQuestsState(questsState);
+  renderBossFightBanner();
+}
+
+function renderBossFightBanner() {
+  if (!bossFightBanner || !session.activeBossFight) {
+    return;
+  }
+
+  bossFightTitle.textContent = session.activeBossFight.name;
+  bossFightDesc.textContent = session.activeBossFight.desc;
+  bossFightBanner.hidden = false;
+  session.expanded = true;
+  hudContainer.classList.add('is-expanded');
+  expandedPanel.hidden = false;
+  miniBar.hidden = true;
+  window.electronAPI.resizeWindow(460);
+  updateSessionTimer();
+}
+
+async function checkBossFightCondition() {
+  if (!session.activeBossFight || !isConditionMet(session.activeBossFight.condition)) {
+    return;
+  }
+
+  await onBossDefeated();
+}
+
+async function onBossDefeated() {
+  const boss = session.activeBossFight;
+
+  playerData.xp += Number(boss.xp) || 0;
+  playerData.coins += Number(boss.coins) || 0;
+  syncPlayerRank();
+  session.activeBossFight = null;
+  questsState.boss_fight.active = null;
+
+  if (bossFightBanner) {
+    bossFightBanner.hidden = true;
+  }
+
+  showTimedElement(bossDefeatedToast, 'toast-flash');
+  await window.electronAPI.savePlayer(playerData);
+  await window.electronAPI.saveQuestsState(questsState);
+}
+
+async function handlePostAction() {
+  renderAll();
+  checkTiltPatterns();
+  await checkAndTriggerBossFight();
+  await checkBossFightCondition();
+  await autoSave();
+}
+
 function validateStartInputs() {
   const lives = Number(livesInput.value);
   const solLimit = Number(solInput.value);
@@ -412,6 +744,8 @@ function buildSessionJSON() {
       sl_hits: session.slHits
     },
     trades: session.trades,
+    tilt_events: session.tilt_events,
+    active_boss_fight: session.activeBossFight ? session.activeBossFight.id : null,
     window_position: currentPosition()
   };
 }
@@ -489,9 +823,11 @@ function renderChecklist() {
 
 function checkEntryUnlock() {
   const checkedCount = Object.values(session.checklist).filter(Boolean).length;
-  entryButton.disabled = session.locked || checkedCount < 3;
-  passButton.disabled = session.locked;
-  slButton.disabled = session.locked;
+  const tiltLocked = Date.now() < tiltCooldownUntil;
+
+  entryButton.disabled = session.locked || tiltLocked || checkedCount < 3;
+  passButton.disabled = session.locked || tiltLocked;
+  slButton.disabled = session.locked || tiltLocked;
 }
 
 function resetChecklist() {
@@ -557,6 +893,7 @@ function resetPassiveTimer() {
     session.passiveEvents++;
     hudContainer.classList.add('passive-alert');
     renderStats();
+    checkPassiveTiltPattern();
     autoSave();
   }, PASSIVE_TIMEOUT);
 }
@@ -566,6 +903,8 @@ function renderAll() {
   renderStats();
   renderPnL();
   renderChecklist();
+  renderHotCold();
+  renderStreak();
 
   if (session.locked) {
     lockSession();
@@ -573,7 +912,7 @@ function renderAll() {
 }
 
 async function onEntry() {
-  if (session.locked || !session.startedAt) {
+  if (session.locked || !session.startedAt || Date.now() < tiltCooldownUntil) {
     return;
   }
 
@@ -583,29 +922,29 @@ async function onEntry() {
   const pnlAmount = readPnlAmount();
   session.pnl_sol += pnlAmount;
   logTrade('ENTRY', pnlAmount, checkedCount);
+  updateRecentResults('win');
   pnlInput.value = '';
   resetChecklist();
   resetPassiveTimer();
-  renderAll();
-  await autoSave();
+  await handlePostAction();
 }
 
 async function onPass() {
-  if (session.locked || !session.startedAt) {
+  if (session.locked || !session.startedAt || Date.now() < tiltCooldownUntil) {
     return;
   }
 
   session.attempts++;
   session.losses++;
   logTrade('PASS', 0, getCheckedCount());
+  updateRecentResults('loss');
   resetChecklist();
   resetPassiveTimer();
-  renderAll();
-  await autoSave();
+  await handlePostAction();
 }
 
 async function onSL() {
-  if (session.locked || !session.startedAt) {
+  if (session.locked || !session.startedAt || Date.now() < tiltCooldownUntil) {
     return;
   }
 
@@ -616,6 +955,7 @@ async function onSL() {
   const pnlAmount = readPnlAmount();
   session.pnl_sol -= pnlAmount;
   logTrade('SL', pnlAmount, getCheckedCount());
+  updateRecentResults('loss');
   pnlInput.value = '';
   resetChecklist();
   resetPassiveTimer();
@@ -625,8 +965,7 @@ async function onSL() {
     lockSession();
   }
 
-  renderAll();
-  await autoSave();
+  await handlePostAction();
 }
 
 expandButton.addEventListener('click', () => {
@@ -638,7 +977,7 @@ expandButton.addEventListener('click', () => {
   hudContainer.classList.add('is-expanded');
   expandedPanel.hidden = false;
   miniBar.hidden = true;
-  window.electronAPI.resizeWindow(400);
+  window.electronAPI.resizeWindow(460);
   window.electronAPI.setIgnoreMouse(false);
 });
 
@@ -689,7 +1028,7 @@ startButton.addEventListener('click', async () => {
   await initSession({ lives, solLimit });
   startScreen.hidden = true;
   hudContainer.hidden = false;
-  await window.electronAPI.resizeWindow(44);
+  await window.electronAPI.resizeWindow(session.expanded ? 460 : 44);
   window.electronAPI.setIgnoreMouse(false);
 });
 
@@ -712,6 +1051,7 @@ async function initSession(config) {
     startedAt: new Date().toISOString(),
     windowPos,
     isComeback: playerData.rusty === true,
+    activeBossFight: null,
     config: {
       lives: config.lives,
       sol_limit: config.solLimit
@@ -721,10 +1061,35 @@ async function initSession(config) {
   sessionOver.hidden = true;
   summaryScreen.hidden = true;
   comebackBanner.hidden = !session.isComeback;
+  bossFightBanner.hidden = true;
+  bossDefeatedToast.hidden = true;
+  tiltAlert.hidden = true;
   endSessionButton.hidden = false;
-  hudContainer.classList.remove('is-expanded', 'is-locked', 'is-summary', 'passive-alert');
-  expandedPanel.hidden = true;
-  miniBar.hidden = false;
+  hudContainer.classList.remove(
+    'is-expanded',
+    'is-locked',
+    'is-summary',
+    'passive-alert',
+    'hot-border',
+    'cold-border',
+    'timer-warning',
+    'tilt-yellow',
+    'tilt-blue',
+    'tilt-red'
+  );
+  session.expanded = session.isComeback;
+  hudContainer.classList.toggle('is-expanded', session.expanded);
+  expandedPanel.hidden = !session.expanded;
+  miniBar.hidden = session.expanded;
+  tiltCooldownUntil = 0;
+  stopSessionTimer();
+
+  if (hasRankLevel(2)) {
+    sessionTimer.hidden = false;
+    updateSessionTimer();
+    timerInterval = setInterval(updateSessionTimer, 1000);
+  }
+
   resetPassiveTimer();
   renderAll();
 }
@@ -737,6 +1102,7 @@ async function showSummary() {
   session.endedAt = new Date().toISOString();
   session.locked = true;
   clearTimeout(passiveTimer);
+  stopSessionTimer();
   renderAll();
   await autoSave();
 
@@ -752,13 +1118,14 @@ async function showSummary() {
 
   summaryScreen.hidden = false;
   sessionOver.hidden = true;
+  bossFightBanner.hidden = true;
   endSessionButton.hidden = true;
   session.expanded = true;
   hudContainer.classList.add('is-expanded', 'is-summary');
   hudContainer.classList.remove('is-locked');
   expandedPanel.hidden = false;
   miniBar.hidden = true;
-  window.electronAPI.resizeWindow(400);
+  window.electronAPI.resizeWindow(460);
   await applySessionRewards();
 }
 
@@ -766,12 +1133,27 @@ function resetToStartScreen() {
   const windowPos = session.windowPos;
   Object.assign(session, createDefaultSession(), { windowPos });
   clearTimeout(passiveTimer);
+  stopSessionTimer();
   summaryScreen.hidden = true;
   sessionOver.hidden = true;
   comebackBanner.hidden = true;
+  bossFightBanner.hidden = true;
+  bossDefeatedToast.hidden = true;
+  tiltAlert.hidden = true;
   endSessionButton.hidden = false;
   hudContainer.hidden = true;
-  hudContainer.classList.remove('is-expanded', 'is-locked', 'is-summary', 'passive-alert');
+  hudContainer.classList.remove(
+    'is-expanded',
+    'is-locked',
+    'is-summary',
+    'passive-alert',
+    'hot-border',
+    'cold-border',
+    'timer-warning',
+    'tilt-yellow',
+    'tilt-blue',
+    'tilt-red'
+  );
   expandedPanel.hidden = true;
   miniBar.hidden = false;
   startScreen.hidden = false;
@@ -793,13 +1175,34 @@ async function init() {
   }
 
   playerData = ensurePlayerShape(await window.electronAPI.loadPlayer());
+  questDefs = await window.electronAPI.loadQuestDefs();
+  questsState = ensureQuestStateShape(await window.electronAPI.loadQuestsState());
   await checkDailyBonus();
 
   hudContainer.hidden = true;
   comebackBanner.hidden = true;
+  bossFightBanner.hidden = true;
+  bossDefeatedToast.hidden = true;
+  tiltAlert.hidden = true;
+  sessionTimer.hidden = true;
   startScreen.hidden = false;
   await window.electronAPI.resizeWindow(180);
   window.electronAPI.setIgnoreMouse(false);
+  window.electronAPI.onKbEntry(() => {
+    if (session.startedAt && !session.locked) {
+      onEntry();
+    }
+  });
+  window.electronAPI.onKbPass(() => {
+    if (session.startedAt && !session.locked) {
+      onPass();
+    }
+  });
+  window.electronAPI.onKbSl(() => {
+    if (session.startedAt && !session.locked) {
+      onSL();
+    }
+  });
   validateStartInputs();
   renderAll();
 }

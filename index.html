@@ -9,8 +9,10 @@
   <body>
     <div id="app">
       <div id="login-bonus-toast" hidden>LOGIN BONUS +25 XP</div>
+      <div id="tilt-alert" hidden></div>
+      <div id="boss-defeated-toast" hidden>BOSS DEFEATED 🏆</div>
       <div id="start-screen">
-        <div class="version-badge">v0.10.0 MVP</div>
+        <div class="version-badge">v0.11.0 MVP</div>
         <h2>SOL TRADER HUD</h2>
         <label>
           Lives (1-5):
@@ -32,7 +34,8 @@
             <span>🖤</span>
           </div>
           <div class="stats-mini">W:0 L:0 0%</div>
-          <div class="version-mini">v0.10.0</div>
+          <div id="streak-display" hidden></div>
+          <div class="version-mini">v0.11.0</div>
           <button id="btn-expand" type="button" aria-label="Expand">≡</button>
         </div>
 
@@ -44,11 +47,17 @@
               <span>❤️</span>
               <span>🖤</span>
             </div>
-            <div class="version-mini">v0.10.0 MVP</div>
+            <div id="session-timer" hidden>00:00:00</div>
+            <div class="version-mini">v0.11.0 MVP</div>
             <button id="btn-collapse" type="button" aria-label="Collapse">×</button>
           </div>
 
           <div id="comeback-banner" hidden>COMEBACK SESSION — 2× XP</div>
+          <div id="boss-fight-banner" hidden>
+            <h3 id="boss-fight-title"></h3>
+            <p id="boss-fight-desc"></p>
+            <span id="boss-timer">00:00:00</span>
+          </div>
 
           <div class="stats-grid">
             <div>

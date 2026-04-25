@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, screen, shell } = require('electron');
+const { app, BrowserWindow, globalShortcut, ipcMain, screen, shell } = require('electron');
 const fs = require('fs');
 const path = require('path');
 const playerStore = require('./storage/playerStore');
@@ -53,6 +53,13 @@ function createWindow() {
   });
 
   win.loadFile('index.html');
+  globalShortcut.unregister('E');
+  globalShortcut.unregister('P');
+  globalShortcut.unregister('S');
+  globalShortcut.register('E', () => win.webContents.send('kb-entry'));
+  globalShortcut.register('P', () => win.webContents.send('kb-pass'));
+  globalShortcut.register('S', () => win.webContents.send('kb-sl'));
+
   if (!app.isPackaged) {
     win.webContents.openDevTools();
   }
@@ -152,7 +159,13 @@ app.whenReady().then(() => {
 });
 
 app.on('window-all-closed', () => {
+  globalShortcut.unregisterAll();
+
   if (process.platform !== 'darwin') {
     app.quit();
   }
+});
+
+app.on('will-quit', () => {
+  globalShortcut.unregisterAll();
 });
