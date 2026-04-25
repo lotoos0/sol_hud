@@ -31,10 +31,15 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ---
 
-## [0.1.2] - 2026-04-25
+## [0.2.0] - 2026-04-25
+
+### Added
+
+- Added a live SOL P&L tracker for ENTRY and SL actions.
 
 ### Fixed
 
+- Added a defensive passive timer guard before session start.
 - Added live validation for start screen lives and SOL limit inputs.
 
 ---
@@ -71,7 +76,7 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ---
 
-[Unreleased]: https://github.com/lotoos0/sol_hud/compare/v0.1.2...HEAD
-[0.1.2]: https://github.com/lotoos0/sol_hud/compare/v0.1.1...v0.1.2
+[Unreleased]: https://github.com/lotoos0/sol_hud/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/lotoos0/sol_hud/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/lotoos0/sol_hud/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/lotoos0/sol_hud/releases/tag/v0.1.0

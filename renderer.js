@@ -10,6 +10,7 @@ function createDefaultSession() {
     attempts: 0,
     wins: 0,
     losses: 0,
+    pnl_sol: 0,
     passiveEvents: 0,
     slHits: 0,
     locked: false,
@@ -49,6 +50,8 @@ const summaryScreen = document.getElementById('summary-screen');
 const summaryStats = document.getElementById('summary-stats');
 const endExportButton = document.getElementById('btn-end-export');
 const endOnlyButton = document.getElementById('btn-end-only');
+const pnlInput = document.getElementById('pnl-input');
+const pnlDisplay = document.getElementById('pnl-display');
 const statsMini = document.querySelector('.stats-mini');
 const statsCards = Array.from(document.querySelectorAll('.stats-grid > div'));
 const checklistInputs = Array.from(document.querySelectorAll('.checklist input'));
@@ -112,6 +115,7 @@ function buildSessionJSON() {
       attempts: session.attempts,
       wins: session.wins,
       losses: session.losses,
+      pnl_sol: session.pnl_sol,
       win_rate: winRate,
       passive_events: session.passiveEvents,
       sl_hits: session.slHits
@@ -172,6 +176,14 @@ function renderStats() {
   });
 }
 
+function renderPnL() {
+  const isPositive = session.pnl_sol >= 0;
+
+  pnlDisplay.textContent = `P&L: ${session.pnl_sol.toFixed(3)} SOL`;
+  pnlDisplay.classList.toggle('pnl-positive', isPositive);
+  pnlDisplay.classList.toggle('pnl-negative', !isPositive);
+}
+
 function renderChecklist() {
   checklistKeys.forEach((key, index) => {
     const input = checklistInputs[index];
@@ -215,7 +227,17 @@ function lockSession() {
   window.electronAPI.resizeWindow(240);
 }
 
-function logTrade(type) {
+function readPnlAmount() {
+  const value = Number.parseFloat(pnlInput.value);
+
+  if (!Number.isFinite(value)) {
+    return 0;
+  }
+
+  return Math.abs(value);
+}
+
+function logTrade(type, pnlAmount = 0) {
   if (!session.startedAt) {
     session.startedAt = new Date().toISOString();
   }
@@ -226,11 +248,16 @@ function logTrade(type) {
     lives: session.lives,
     attempts: session.attempts,
     wins: session.wins,
-    losses: session.losses
+    losses: session.losses,
+    pnl_amount: pnlAmount
   });
 }
 
 function resetPassiveTimer() {
+  if (!session.startedAt) {
+    return;
+  }
+
   clearTimeout(passiveTimer);
   hudContainer.classList.remove('passive-alert');
 
@@ -245,6 +272,7 @@ function resetPassiveTimer() {
 function renderAll() {
   renderHearts();
   renderStats();
+  renderPnL();
   renderChecklist();
 
   if (session.locked) {
@@ -259,7 +287,10 @@ async function onEntry() {
 
   session.attempts++;
   session.wins++;
-  logTrade('ENTRY');
+  const pnlAmount = readPnlAmount();
+  session.pnl_sol += pnlAmount;
+  logTrade('ENTRY', pnlAmount);
+  pnlInput.value = '';
   resetChecklist();
   resetPassiveTimer();
   renderAll();
@@ -289,7 +320,10 @@ async function onSL() {
   session.slHits++;
   session.attempts++;
   session.losses++;
-  logTrade('SL');
+  const pnlAmount = readPnlAmount();
+  session.pnl_sol -= pnlAmount;
+  logTrade('SL', pnlAmount);
+  pnlInput.value = '';
   resetChecklist();
   resetPassiveTimer();
 
