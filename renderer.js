@@ -10,6 +10,7 @@ function createDefaultSession() {
     attempts: 0,
     wins: 0,
     losses: 0,
+    pnl_sol: 0,
     passiveEvents: 0,
     slHits: 0,
     locked: false,
@@ -49,12 +50,28 @@ const summaryScreen = document.getElementById('summary-screen');
 const summaryStats = document.getElementById('summary-stats');
 const endExportButton = document.getElementById('btn-end-export');
 const endOnlyButton = document.getElementById('btn-end-only');
+const pnlInput = document.getElementById('pnl-input');
+const pnlDisplay = document.getElementById('pnl-display');
 const statsMini = document.querySelector('.stats-mini');
 const statsCards = Array.from(document.querySelectorAll('.stats-grid > div'));
 const checklistInputs = Array.from(document.querySelectorAll('.checklist input'));
 const checklistKeys = ['chart', 'narrative', 'bubblemap', 'holders'];
 
 const sessionOver = document.getElementById('session-over');
+
+function validateStartInputs() {
+  const lives = Number(livesInput.value);
+  const solLimit = Number(solInput.value);
+  const livesErr = !Number.isInteger(lives) || lives < 1 || lives > 5;
+  const solErr = !Number.isFinite(solLimit) || solLimit < 0.01 || solLimit > 10.0;
+  const valid = !livesErr && !solErr;
+
+  livesInput.classList.toggle('input-error', livesErr);
+  solInput.classList.toggle('input-error', solErr);
+  startButton.disabled = !valid;
+
+  return { valid, livesErr, solErr };
+}
 
 async function generateSessionId() {
   const today = new Date().toISOString().slice(0, 10);
@@ -98,6 +115,7 @@ function buildSessionJSON() {
       attempts: session.attempts,
       wins: session.wins,
       losses: session.losses,
+      pnl_sol: session.pnl_sol,
       win_rate: winRate,
       passive_events: session.passiveEvents,
       sl_hits: session.slHits
@@ -158,6 +176,14 @@ function renderStats() {
   });
 }
 
+function renderPnL() {
+  const isPositive = session.pnl_sol >= 0;
+
+  pnlDisplay.textContent = `P&L: ${session.pnl_sol.toFixed(3)} SOL`;
+  pnlDisplay.classList.toggle('pnl-positive', isPositive);
+  pnlDisplay.classList.toggle('pnl-negative', !isPositive);
+}
+
 function renderChecklist() {
   checklistKeys.forEach((key, index) => {
     const input = checklistInputs[index];
@@ -201,7 +227,17 @@ function lockSession() {
   window.electronAPI.resizeWindow(240);
 }
 
-function logTrade(type) {
+function readPnlAmount() {
+  const value = Number.parseFloat(pnlInput.value);
+
+  if (!Number.isFinite(value)) {
+    return 0;
+  }
+
+  return Math.abs(value);
+}
+
+function logTrade(type, pnlAmount = 0) {
   if (!session.startedAt) {
     session.startedAt = new Date().toISOString();
   }
@@ -212,11 +248,16 @@ function logTrade(type) {
     lives: session.lives,
     attempts: session.attempts,
     wins: session.wins,
-    losses: session.losses
+    losses: session.losses,
+    pnl_amount: pnlAmount
   });
 }
 
 function resetPassiveTimer() {
+  if (!session.startedAt) {
+    return;
+  }
+
   clearTimeout(passiveTimer);
   hudContainer.classList.remove('passive-alert');
 
@@ -231,6 +272,7 @@ function resetPassiveTimer() {
 function renderAll() {
   renderHearts();
   renderStats();
+  renderPnL();
   renderChecklist();
 
   if (session.locked) {
@@ -245,7 +287,10 @@ async function onEntry() {
 
   session.attempts++;
   session.wins++;
-  logTrade('ENTRY');
+  const pnlAmount = readPnlAmount();
+  session.pnl_sol += pnlAmount;
+  logTrade('ENTRY', pnlAmount);
+  pnlInput.value = '';
   resetChecklist();
   resetPassiveTimer();
   renderAll();
@@ -275,7 +320,10 @@ async function onSL() {
   session.slHits++;
   session.attempts++;
   session.losses++;
-  logTrade('SL');
+  const pnlAmount = readPnlAmount();
+  session.pnl_sol -= pnlAmount;
+  logTrade('SL', pnlAmount);
+  pnlInput.value = '';
   resetChecklist();
   resetPassiveTimer();
 
@@ -336,10 +384,15 @@ endExportButton.addEventListener('click', async () => {
 endOnlyButton.addEventListener('click', resetToStartScreen);
 
 startButton.addEventListener('click', async () => {
-  const lives = Math.min(Math.max(parseInt(livesInput.value, 10) || 3, 1), 5);
-  const solLimit = parseFloat(solInput.value) || 0.15;
+  const { valid } = validateStartInputs();
+
+  if (!valid) {
+    return;
+  }
 
   startButton.disabled = true;
+  const lives = Number(livesInput.value);
+  const solLimit = Number(solInput.value);
   await initSession({ lives, solLimit });
   startScreen.hidden = true;
   hudContainer.hidden = false;
@@ -431,6 +484,10 @@ function resetToStartScreen() {
   renderAll();
 }
 
+[livesInput, solInput].forEach((input) => {
+  input.addEventListener('input', validateStartInputs);
+});
+
 async function init() {
   try {
     session.windowPos = await window.electronAPI.loadLastPosition();
@@ -442,6 +499,7 @@ async function init() {
   startScreen.hidden = false;
   await window.electronAPI.resizeWindow(180);
   window.electronAPI.setIgnoreMouse(false);
+  validateStartInputs();
   renderAll();
 }
 

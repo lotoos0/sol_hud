@@ -86,6 +86,11 @@ body {
   border-color: var(--accent);
 }
 
+.input-error {
+  border-color: var(--danger) !important;
+  box-shadow: 0 0 6px rgba(255, 51, 102, 0.4);
+}
+
 #btn-start {
   width: 100%;
   height: 34px;
@@ -226,6 +231,21 @@ button:hover {
   text-shadow: 0 0 6px rgba(0, 255, 136, 0.45);
 }
 
+#pnl-display {
+  margin: -2px 0 8px;
+  font-size: 11px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.pnl-positive {
+  color: var(--accent);
+}
+
+.pnl-negative {
+  color: var(--danger);
+}
+
 .passive-alert {
   animation: pulse-border 1.2s ease-in-out infinite;
 }
@@ -266,11 +286,36 @@ button:hover {
   -webkit-app-region: no-drag;
 }
 
+#pnl-input {
+  width: 100px;
+  box-sizing: border-box;
+  padding: 4px 7px;
+  border: 1px solid rgba(0, 255, 136, 0.35);
+  border-radius: 6px;
+  outline: none;
+  background: rgba(26, 26, 46, 0.88);
+  color: var(--text);
+  font: inherit;
+  font-size: 11px;
+}
+
+#pnl-input:focus {
+  border-color: var(--accent);
+}
+
+.pnl-input-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 6px;
+}
+
 input,
 label,
 .stats-grid,
 .checklist,
+.pnl-input-row,
 .action-buttons,
+#pnl-display,
 #session-over,
 #summary-screen {
   -webkit-app-region: no-drag;
@@ -283,8 +328,10 @@ label,
 }
 
 #hud-container.is-locked .checklist,
+#hud-container.is-locked .pnl-input-row,
 #hud-container.is-locked .action-buttons,
 #hud-container.is-summary .checklist,
+#hud-container.is-summary .pnl-input-row,
 #hud-container.is-summary .action-buttons,
 #hud-container.is-summary .stats-grid {
   display: none;
