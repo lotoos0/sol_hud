@@ -1,59 +1,59 @@
 # Contributing
 
-Dziękujemy za zainteresowanie rozwojem Sol HUD! Poniżej znajdziesz wszystko, czego potrzebujesz, żeby efektywnie współpracować.
+Thank you for your interest in developing Sol HUD! Below you will find everything you need to collaborate effectively.
 
 ---
 
-## Spis treści
+## Table of contents
 
-- [Zgłaszanie błędów](#zgłaszanie-błędów)
-- [Propozycje funkcji](#propozycje-funkcji)
+- [Reporting bugs](#reporting-bugs)
+- [Feature proposals](#feature-proposals)
 - [Development workflow](#development-workflow)
-- [Styl kodu](#styl-kodu)
-- [Struktura commitów](#struktura-commitów)
-- [Pull Requesty](#pull-requesty)
+- [Code style](#code-style)
+- [Commit structure](#commit-structure)
+- [Pull Requests](#pull-requests)
 
 ---
 
-## Zgłaszanie błędów
+## Reporting bugs
 
-Zanim otworzysz issue, sprawdź, czy podobny błąd nie został już zgłoszony.
+Before opening an issue, check whether a similar bug has already been reported.
 
-Podczas zgłaszania podaj:
+When reporting, provide:
 
-1. **System operacyjny i wersję** (np. Windows 11 22H2)
-2. **Wersję Node.js** (`node -v`) i **npm** (`npm -v`)
-3. **Kroki reprodukcji** — minimalna sekwencja akcji prowadząca do błędu
-4. **Zachowanie oczekiwane** vs **zachowanie rzeczywiste**
-5. **Logi z DevTools** — uruchom `npm start`, otwórz DevTools (F12 lub automatycznie) i wklej błędy z konsoli
+1. **Operating system and version** (for example Windows 11 22H2)
+2. **Node.js version** (`node -v`) and **npm** (`npm -v`)
+3. **Reproduction steps** - the minimal sequence of actions that leads to the bug
+4. **Expected behavior** vs **actual behavior**
+5. **DevTools logs** - run `npm start`, open DevTools (F12 or automatically), and paste console errors
 
 ```
-Środowisko:
+Environment:
 - OS: Windows 11
 - Node: 20.11.0
 - npm: 10.2.4
-- Wersja Sol HUD: 0.1.1
+- Sol HUD version: 0.1.1
 ```
 
 ---
 
-## Propozycje funkcji
+## Feature proposals
 
-Otwórz issue z tagiem `enhancement` i opisz:
+Open an issue with the `enhancement` tag and describe:
 
-- **Problem**, który chcesz rozwiązać (co Cię frustruje?)
-- **Proponowane rozwiązanie** (jak powinno działać?)
-- **Alternatywy**, które rozważałeś
+- **Problem** you want to solve (what is frustrating?)
+- **Proposed solution** (how should it work?)
+- **Alternatives** you considered
 
 ---
 
 ## Development workflow
 
-### Wymagania
+### Requirements
 
-- Node.js ≥ 18
-- npm ≥ 9
-- Windows 10/11 (overlay używa Windows-specific API: `transparent`, `alwaysOnTop`)
+- Node.js >= 18
+- npm >= 9
+- Windows 10/11 (overlay uses Windows-specific APIs: `transparent`, `alwaysOnTop`)
 
 ### Setup
 
@@ -67,86 +67,86 @@ npm start
 ### Branching
 
 ```
-main          # stabilna wersja produkcyjna
-dev           # aktywny development, PR-y trafiają tutaj
-feature/<opis>  # np. feature/keyboard-shortcuts
-fix/<opis>      # np. fix/passive-timer-reset
+main          # stable production version
+dev           # active development, PRs go here
+feature/<description>  # e.g. feature/keyboard-shortcuts
+fix/<description>      # e.g. fix/passive-timer-reset
 ```
 
-Pracuj na gałęzi `feature/*` lub `fix/*`, PR składaj do `dev`.
+Work on a `feature/*` or `fix/*` branch, and submit PRs to `dev`.
 
-### Testowanie ręczne
+### Manual testing
 
-Brak automatycznych testów. Przed PR przetestuj manualnie:
+There are no automated tests. Before a PR, test manually:
 
-| Scenariusz | Oczekiwany wynik |
+| Scenario | Expected result |
 |-----------|-----------------|
-| Start sesji, 3 życia | Mini-bar 44 px, serce ❤️❤️❤️ |
-| Kliknij ENTRY bez 3 checkboxów | Przycisk disabled |
-| Zaznacz 3/4 checkboxów | ENTRY się odblokowuje |
-| Kliknij SL 3 razy | Sesja zablokowana, komunikat „Session over" |
-| Brak akcji przez 5 min | Pulsujący border (passive-alert) |
-| Zamknij i otwórz aplikację | Okno pojawia się na tej samej pozycji |
-| End Session → podsumowanie | Plik JSON w `sessions/` |
+| Start session, 3 lives | Mini-bar 44 px, hearts ❤️❤️❤️ |
+| Click ENTRY without 3 checkboxes | Button disabled |
+| Select 3/4 checkboxes | ENTRY unlocks |
+| Click SL 3 times | Session locked, "Session over" message |
+| No action for 5 min | Pulsing border (passive-alert) |
+| Close and reopen the app | Window appears in the same position |
+| End Session -> summary | JSON file in `sessions/` |
 
 ---
 
-## Styl kodu
+## Code style
 
-Projekt nie ma skonfigurowanego ESLint ani Prettiera. Stosuj się do konwencji obecnych w plikach:
+The project does not have ESLint or Prettier configured. Follow the conventions already present in the files:
 
 ### JavaScript
 
 ```js
-// ✅ Dobrze — const/let, arrow functions, async/await
+// ✅ Good - const/let, arrow functions, async/await
 const result = await window.electronAPI.saveSession(data);
 
-// ❌ Źle — var, callback hell
+// ❌ Bad - var, callback hell
 var result = window.electronAPI.saveSession(data, function(r) { ... });
 ```
 
-- `const` wszędzie gdzie możliwe, `let` gdy potrzebna mutacja
-- `async/await` zamiast `.then()/.catch()`
-- Brak komentarzy wyjaśniających **co** kod robi — tylko **dlaczego** (nieoczywiste przypadki)
-- Nazwy funkcji czasownikowe: `renderHearts()`, `lockSession()`, `onSL()`
+- `const` wherever possible, `let` when mutation is needed
+- `async/await` instead of `.then()/.catch()`
+- No comments explaining **what** the code does - only **why** (non-obvious cases)
+- Verb-based function names: `renderHearts()`, `lockSession()`, `onSL()`
 
 ### CSS
 
-- Używaj zmiennych CSS (`--accent`, `--danger`, `--bg`, `--text`, `--dim`)
-- Nie dodawaj zewnętrznych zależności CSS
-- Zachowaj `user-select: none` na całym UI (overlay nie powinien pozwalać na zaznaczanie tekstu)
+- Use CSS variables (`--accent`, `--danger`, `--bg`, `--text`, `--dim`)
+- Do not add external CSS dependencies
+- Keep `user-select: none` across the whole UI (the overlay should not allow text selection)
 
 ### IPC
 
-- Nowe kanały IPC deklaruj w `preload.js` (bridge) — nie używaj `ipcRenderer` bezpośrednio w `renderer.js`
-- Kanały jednokierunkowe (fire-and-forget): `ipcRenderer.send` / `ipcMain.on`
-- Kanały z odpowiedzią: `ipcRenderer.invoke` / `ipcMain.handle`
+- Declare new IPC channels in `preload.js` (bridge) - do not use `ipcRenderer` directly in `renderer.js`
+- One-way channels (fire-and-forget): `ipcRenderer.send` / `ipcMain.on`
+- Channels with response: `ipcRenderer.invoke` / `ipcMain.handle`
 
 ---
 
-## Struktura commitów
+## Commit structure
 
-Format: [Conventional Commits](https://www.conventionalcommits.org/pl/v1.0.0/)
+Format: [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/)
 
 ```
-<typ>(<zakres>): <opis>
+<type>(<scope>): <description>
 
-[opcjonalne ciało]
-[opcjonalna stopka]
+[optional body]
+[optional footer]
 ```
 
-**Typy:**
+**Types:**
 
-| Typ | Kiedy |
+| Type | When |
 |-----|-------|
-| `feat` | Nowa funkcja |
-| `fix` | Naprawa błędu |
-| `refactor` | Zmiana kodu bez zmiany zachowania |
-| `style` | Zmiany CSS/formatowanie |
-| `docs` | Dokumentacja |
-| `chore` | Konfiguracja, zależności |
+| `feat` | New feature |
+| `fix` | Bug fix |
+| `refactor` | Code change without behavior change |
+| `style` | CSS/formatting changes |
+| `docs` | Documentation |
+| `chore` | Configuration, dependencies |
 
-**Przykłady:**
+**Examples:**
 
 ```
 feat(renderer): add keyboard shortcuts for ENTRY/PASS/SL
@@ -157,14 +157,14 @@ chore: upgrade electron to 28.3.0
 
 ---
 
-## Pull Requesty
+## Pull Requests
 
-1. Utwórz branch z `dev`: `git checkout -b feature/moja-funkcja dev`
-2. Wprowadź zmiany, commituj zgodnie z konwencją powyżej
-3. Przetestuj manualnie (patrz tabela wyżej)
-4. Otwórz PR do `dev` z opisem:
-   - Co zostało zmienione i dlaczego
-   - Jak przetestować
-   - Link do powiązanego issue (jeśli dotyczy)
+1. Create a branch from `dev`: `git checkout -b feature/moja-funkcja dev`
+2. Make changes and commit according to the convention above
+3. Test manually (see the table above)
+4. Open a PR to `dev` with a description:
+   - What changed and why
+   - How to test
+   - Link to the related issue (if applicable)
 
-PR będzie zreviewowany w ciągu 48 h.
+The PR will be reviewed within 48 h.

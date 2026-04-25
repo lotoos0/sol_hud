@@ -1,102 +1,102 @@
 # Sol HUD
 
-![Wersja](https://img.shields.io/badge/wersja-0.1.1--MVP-00ff88?style=flat-square)
+![Version](https://img.shields.io/badge/version-0.1.1--MVP-00ff88?style=flat-square)
 ![Electron](https://img.shields.io/badge/Electron-28-47848f?style=flat-square&logo=electron)
-![Licencja](https://img.shields.io/badge/licencja-MIT-blue?style=flat-square)
-![Platform](https://img.shields.io/badge/platforma-Windows-0078d4?style=flat-square&logo=windows)
+![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)
+![Platform](https://img.shields.io/badge/platform-Windows-0078d4?style=flat-square&logo=windows)
 
-> Przezroczysty overlay dla Windows wspomagający dyscyplinę tradingu na SOL (Solana). Zawsze na wierzchu, minimalny, nie przeszkadza w pracy.
+> Transparent Windows overlay that supports trading discipline on SOL (Solana). Always on top, minimal, and unobtrusive.
 
 ---
 
-## Spis treści
+## Table of contents
 
-- [Opis](#opis)
-- [Funkcjonalności](#funkcjonalności)
+- [Description](#description)
+- [Features](#features)
 - [Tech stack](#tech-stack)
 - [Quick Start](#quick-start)
-- [Sposób użycia](#sposób-użycia)
-- [Format sesji](#format-sesji)
+- [Usage](#usage)
+- [Session format](#session-format)
 - [Contributing](#contributing)
-- [Licencja](#licencja)
+- [License](#license)
 
 ---
 
-## Opis
+## Description
 
-Sol HUD to nakładka desktopowa (280 px szerokości) działająca nad wszystkimi oknami. Pomaga traderowi:
+Sol HUD is a desktop overlay (280 px wide) that stays above all windows. It helps the trader:
 
-- **nie wchodzić** w trade bez ukończonego checklisty,
-- **liczyć życia** — po N stratach (stop-loss) sesja jest blokowana,
-- **rejestrować pasywność** — alarm po 5 minutach braku akcji,
-- **zapisywać historię sesji** w lokalnych plikach JSON.
+- **avoid entering** a trade without completing the checklist,
+- **track lives** - after N losses (stop-loss), the session is locked,
+- **record inactivity** - alert after 5 minutes without action,
+- **save session history** in local JSON files.
 
-Skierowany do day-traderów SOL, którzy chcą wymusić na sobie dyscyplinę procesu.
+Intended for SOL day traders who want to enforce process discipline.
 
 ---
 
-## Funkcjonalności
+## Features
 
-| # | Funkcja | Opis |
+| # | Feature | Description |
 |---|---------|------|
-| ❤️ | **System żyć** | Konfigurowalne życia (1–5); SL odejmuje życie, 0 blokuje sesję |
-| ✅ | **Checklista przed wejściem** | 4 pola (wykres, narracja, bańka, holderzy); min. 3 odblokują ENTRY |
-| 📊 | **Statystyki na żywo** | Liczba prób, wygrane, win-rate %, zdarzenia pasywne |
-| ⏱️ | **Timer pasywny** | 5 minut bez akcji → pulsujący alert na obramowaniu |
-| 💾 | **Auto-zapis sesji** | Po każdej akcji plik `sessions/YYYY-MM-DD_NNN.json` |
-| 🖱️ | **Click-through** | Okno przezroczyste dla myszy poza obszarem UI |
-| 📌 | **Zapamiętana pozycja** | Pozycja okna persystuje między uruchomieniami |
-| 📁 | **Eksport sesji** | Przycisk otwiera folder `sessions/` w Eksploratorze |
+| ❤️ | **Lives system** | Configurable lives (1-5); SL subtracts one life, 0 locks the session |
+| ✅ | **Pre-entry checklist** | 4 fields (chart, narrative, bubblemap, holders); min. 3 unlock ENTRY |
+| 📊 | **Live stats** | Number of attempts, wins, win-rate %, passive events |
+| ⏱️ | **Passive timer** | 5 minutes without action -> pulsing border alert |
+| 💾 | **Session auto-save** | After each action, file `sessions/YYYY-MM-DD_NNN.json` |
+| 🖱️ | **Click-through** | Window is transparent to the mouse outside the UI area |
+| 📍 | **Remembered position** | Window position persists between launches |
+| 📁 | **Session export** | Button opens the `sessions/` folder in Explorer |
 
 ---
 
 ## Tech stack
 
-| Warstwa | Technologia | Rola |
+| Layer | Technology | Role |
 |---------|-------------|------|
-| Runtime | Electron 28 | Frameless window, IPC, dostęp do FS |
-| Frontend | Vanilla JS (ES2020) | Logika UI, stan sesji w pamięci |
-| Styl | CSS3 (custom properties) | Dark theme, animacje, drag regions |
-| Persystencja | JSON (lokalny FS) | Sesje + pozycja okna |
-| Bundler | — | Brak; żadnego kroku budowania |
+| Runtime | Electron 28 | Frameless window, IPC, FS access |
+| Frontend | Vanilla JS (ES2020) | UI logic, in-memory session state |
+| Style | CSS3 (custom properties) | Dark theme, animations, drag regions |
+| Persistence | JSON (local FS) | Sessions + window position |
+| Bundler | - | None; no build step |
 
 ---
 
 ## Quick Start
 
-**Wymagania:** Node.js ≥ 18, npm ≥ 9, Windows 10/11
+**Requirements:** Node.js >= 18, npm >= 9, Windows 10/11
 
 ```bash
-# 1. Sklonuj repozytorium
+# 1. Clone the repository
 git clone <url-repo>
 cd sol-hud
 
-# 2. Zainstaluj zależności
+# 2. Install dependencies
 npm install
 
-# 3. Uruchom aplikację
+# 3. Start the app
 npm start
 ```
 
-Aplikacja pojawia się w lewym górnym rogu ekranu. Możesz ją przeciągnąć w dowolne miejsce — pozycja jest zapamiętana.
+The app appears in the top-left corner of the screen. You can drag it anywhere - the position is remembered.
 
 ---
 
-## Sposób użycia
+## Usage
 
-### 1. Ekran startowy
+### 1. Start screen
 
-Ustaw liczbę żyć (domyślnie 3) i limit SOL (domyślnie 0,15), następnie kliknij **START SESSION**.
+Set the number of lives (default 3) and SOL limit (default 0.15), then click **START SESSION**.
 
-### 2. Mini-bar (widok zwinięty)
+### 2. Mini-bar (collapsed view)
 
 ```
 ❤️❤️❤️  W:2 L:1 67%  v0.1.1  ≡
 ```
 
-Kliknij `≡` żeby rozwinąć panel.
+Click `≡` to expand the panel.
 
-### 3. Panel rozwinięty
+### 3. Expanded panel
 
 ```
 ❤️❤️❤️  v0.1.1 MVP  ×
@@ -114,20 +114,20 @@ Kliknij `≡` żeby rozwinąć panel.
           [ End Session ]
 ```
 
-- Zaznacz **min. 3** checkboxy żeby odblokować **ENTRY**
-- **ENTRY** = trade wzięty (wygrana)
-- **PASS** = świadome ominięcie (strata do statystyk, życie bez zmian)
-- **SL** = stop-loss — odejmuje życie
+- Select **min. 3** checkboxes to unlock **ENTRY**
+- **ENTRY** = trade taken (win)
+- **PASS** = deliberate skip (loss in stats, lives unchanged)
+- **SL** = stop-loss - subtracts one life
 
-### 4. Koniec sesji
+### 4. End of session
 
-Po kliknięciu **End Session** widoczne jest podsumowanie z wynikami oraz opcja otwarcia folderu z plikami sesji.
+After clicking **End Session**, a summary with results is shown along with an option to open the session files folder.
 
 ---
 
-## Format sesji
+## Session format
 
-Każda sesja zapisywana jest w `sessions/YYYY-MM-DD_NNN.json`:
+Each session is saved in `sessions/YYYY-MM-DD_NNN.json`:
 
 ```json
 {
@@ -150,16 +150,16 @@ Każda sesja zapisywana jest w `sessions/YYYY-MM-DD_NNN.json`:
 }
 ```
 
-Typ handlu: `ENTRY` | `PASS` | `SL`
+Trade type: `ENTRY` | `PASS` | `SL`
 
 ---
 
 ## Contributing
 
-Zobacz [CONTRIBUTING.md](CONTRIBUTING.md).
+See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ---
 
-## Licencja
+## License
 
 MIT © 2026
