@@ -112,15 +112,15 @@ body {
 }
 
 #hud-container.is-expanded {
-  height: 290px;
+  height: 360px;
 }
 
 #hud-container.is-locked {
-  height: 240px;
+  height: 290px;
 }
 
 #hud-container.is-summary {
-  height: 320px;
+  height: 360px;
 }
 
 .mini-bar {

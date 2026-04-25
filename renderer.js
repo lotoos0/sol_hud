@@ -224,7 +224,7 @@ function lockSession() {
   hudContainer.classList.add('is-expanded', 'is-locked');
   expandedPanel.hidden = false;
   miniBar.hidden = true;
-  window.electronAPI.resizeWindow(240);
+  window.electronAPI.resizeWindow(290);
 }
 
 function readPnlAmount() {
@@ -345,7 +345,7 @@ expandButton.addEventListener('click', () => {
   hudContainer.classList.add('is-expanded');
   expandedPanel.hidden = false;
   miniBar.hidden = true;
-  window.electronAPI.resizeWindow(290);
+  window.electronAPI.resizeWindow(360);
   window.electronAPI.setIgnoreMouse(false);
 });
 
@@ -463,7 +463,7 @@ async function showSummary() {
   hudContainer.classList.remove('is-locked');
   expandedPanel.hidden = false;
   miniBar.hidden = true;
-  window.electronAPI.resizeWindow(320);
+  window.electronAPI.resizeWindow(360);
 }
 
 function resetToStartScreen() {
