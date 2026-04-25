@@ -31,6 +31,20 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [0.5.0] - 2026-04-25
+
+### Added
+
+- Added `storage/questStore.js` for loading and saving quest state.
+- Added read-only quest definitions loading from `data/quests_definitions.json`.
+- Added `storage/questStore.js` to the local JavaScript syntax validation script.
+
+### Changed
+
+- Updated visible application version labels to `0.5.0`.
+
+---
+
 ## [0.4.1] - 2026-04-25
 
 ### Changed
@@ -109,7 +123,8 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ---
 
-[Unreleased]: https://github.com/lotoos0/sol_hud/compare/v0.4.1...HEAD
+[Unreleased]: https://github.com/lotoos0/sol_hud/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/lotoos0/sol_hud/compare/v0.4.1...v0.5.0
 [0.4.1]: https://github.com/lotoos0/sol_hud/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/lotoos0/sol_hud/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/lotoos0/sol_hud/compare/v0.2.0...v0.3.0
