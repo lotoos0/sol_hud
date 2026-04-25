@@ -1,0 +1,341 @@
+{
+  "mainline": [
+    {
+      "id": "ml_01",
+      "name": "Boot Sequence",
+      "desc": "Start the first disciplined trading session.",
+      "condition": {
+        "metric": "sessions_started",
+        "operator": ">=",
+        "value": 1
+      },
+      "xp": 50,
+      "coins": 10,
+      "unlock": [
+        "ml_02"
+      ],
+      "hidden": false,
+      "type": "mainline"
+    },
+    {
+      "id": "ml_02",
+      "name": "Checklist Online",
+      "desc": "Take an entry only after completing at least three checklist items.",
+      "condition": {
+        "metric": "qualified_entries",
+        "operator": ">=",
+        "value": 1
+      },
+      "xp": 75,
+      "coins": 15,
+      "unlock": [
+        "ml_03"
+      ],
+      "hidden": false,
+      "type": "mainline"
+    },
+    {
+      "id": "ml_03",
+      "name": "Risk Circuit",
+      "desc": "Finish a session without exceeding the configured SOL limit.",
+      "condition": {
+        "metric": "sessions_within_sol_limit",
+        "operator": ">=",
+        "value": 1
+      },
+      "xp": 100,
+      "coins": 20,
+      "unlock": [
+        "ml_04"
+      ],
+      "hidden": false,
+      "type": "mainline"
+    },
+    {
+      "id": "ml_04",
+      "name": "Green Print",
+      "desc": "Record three winning ENTRY actions across saved sessions.",
+      "condition": {
+        "metric": "wins",
+        "operator": ">=",
+        "value": 3
+      },
+      "xp": 125,
+      "coins": 25,
+      "unlock": [
+        "ml_05"
+      ],
+      "hidden": false,
+      "type": "mainline"
+    },
+    {
+      "id": "ml_05",
+      "name": "Loss Protocol",
+      "desc": "Take a stop-loss and continue following the session rules.",
+      "condition": {
+        "metric": "sl_hits",
+        "operator": ">=",
+        "value": 1
+      },
+      "xp": 150,
+      "coins": 30,
+      "unlock": [
+        "ml_06"
+      ],
+      "hidden": false,
+      "type": "mainline"
+    },
+    {
+      "id": "ml_06",
+      "name": "Calm Operator",
+      "desc": "Complete a session with no passive alerts.",
+      "condition": {
+        "metric": "sessions_without_passive_alerts",
+        "operator": ">=",
+        "value": 1
+      },
+      "xp": 175,
+      "coins": 35,
+      "unlock": [
+        "ml_07"
+      ],
+      "hidden": false,
+      "type": "mainline"
+    },
+    {
+      "id": "ml_07",
+      "name": "Process Locked",
+      "desc": "Complete five saved sessions while keeping the HUD discipline loop active.",
+      "condition": {
+        "metric": "sessions_completed",
+        "operator": ">=",
+        "value": 5
+      },
+      "xp": 250,
+      "coins": 50,
+      "unlock": [],
+      "hidden": false,
+      "type": "mainline"
+    }
+  ],
+  "side_quests": [
+    {
+      "id": "sq_01",
+      "name": "Clean Pass",
+      "desc": "Use PASS to skip a trade that does not meet the setup.",
+      "condition": {
+        "metric": "passes",
+        "operator": ">=",
+        "value": 1
+      },
+      "xp": 40,
+      "coins": 8,
+      "unlock": [],
+      "hidden": false,
+      "type": "side_quest"
+    },
+    {
+      "id": "sq_02",
+      "name": "Three Checks",
+      "desc": "Unlock ENTRY by checking exactly three checklist items.",
+      "condition": {
+        "metric": "entries_with_three_checks",
+        "operator": ">=",
+        "value": 1
+      },
+      "xp": 45,
+      "coins": 9,
+      "unlock": [],
+      "hidden": false,
+      "type": "side_quest"
+    },
+    {
+      "id": "sq_03",
+      "name": "Full Confirmation",
+      "desc": "Unlock ENTRY with all four checklist items confirmed.",
+      "condition": {
+        "metric": "entries_with_four_checks",
+        "operator": ">=",
+        "value": 1
+      },
+      "xp": 55,
+      "coins": 11,
+      "unlock": [],
+      "hidden": false,
+      "type": "side_quest"
+    },
+    {
+      "id": "sq_04",
+      "name": "No Rush",
+      "desc": "Let the passive timer trigger once and then make a deliberate decision.",
+      "condition": {
+        "metric": "passive_events",
+        "operator": ">=",
+        "value": 1
+      },
+      "xp": 50,
+      "coins": 10,
+      "unlock": [],
+      "hidden": false,
+      "type": "side_quest"
+    },
+    {
+      "id": "sq_05",
+      "name": "Small Size",
+      "desc": "Run a session with a SOL limit of 0.15 or lower.",
+      "condition": {
+        "metric": "sessions_with_sol_limit_lte",
+        "operator": "<=",
+        "value": 0.15
+      },
+      "xp": 60,
+      "coins": 12,
+      "unlock": [],
+      "hidden": false,
+      "type": "side_quest"
+    },
+    {
+      "id": "sq_06",
+      "name": "Export Habit",
+      "desc": "Finish a session and open the saved sessions folder.",
+      "condition": {
+        "metric": "session_exports",
+        "operator": ">=",
+        "value": 1
+      },
+      "xp": 65,
+      "coins": 13,
+      "unlock": [],
+      "hidden": false,
+      "type": "side_quest"
+    }
+  ],
+  "boss_fights": [
+    {
+      "id": "bf_01",
+      "name": "Tilt Shield",
+      "desc": "Stop trading when the session locks after all lives are lost.",
+      "condition": {
+        "metric": "locked_sessions",
+        "operator": ">=",
+        "value": 1
+      },
+      "xp": 200,
+      "coins": 40,
+      "unlock": [
+        "bf_02"
+      ],
+      "hidden": false,
+      "type": "boss_fight"
+    },
+    {
+      "id": "bf_02",
+      "name": "Red Day Containment",
+      "desc": "Complete a losing session without exceeding the configured SOL limit.",
+      "condition": {
+        "metric": "contained_red_sessions",
+        "operator": ">=",
+        "value": 1
+      },
+      "xp": 250,
+      "coins": 50,
+      "unlock": [
+        "bf_03"
+      ],
+      "hidden": false,
+      "type": "boss_fight"
+    },
+    {
+      "id": "bf_03",
+      "name": "Discipline Run",
+      "desc": "Complete three consecutive sessions without breaking the checklist rule.",
+      "condition": {
+        "metric": "disciplined_session_streak",
+        "operator": ">=",
+        "value": 3
+      },
+      "xp": 350,
+      "coins": 70,
+      "unlock": [],
+      "hidden": true,
+      "type": "boss_fight"
+    }
+  ],
+  "achievements": [
+    {
+      "id": "ach_01",
+      "name": "First Save",
+      "desc": "Create the first session JSON file.",
+      "condition": {
+        "metric": "sessions_saved",
+        "operator": ">=",
+        "value": 1
+      },
+      "xp": 25,
+      "coins": 5,
+      "unlock": [],
+      "hidden": false,
+      "type": "achievement"
+    },
+    {
+      "id": "ach_02",
+      "name": "First Win",
+      "desc": "Record the first winning ENTRY action.",
+      "condition": {
+        "metric": "wins",
+        "operator": ">=",
+        "value": 1
+      },
+      "xp": 35,
+      "coins": 7,
+      "unlock": [],
+      "hidden": false,
+      "type": "achievement"
+    },
+    {
+      "id": "ach_03",
+      "name": "First Lesson",
+      "desc": "Record the first stop-loss event.",
+      "condition": {
+        "metric": "sl_hits",
+        "operator": ">=",
+        "value": 1
+      },
+      "xp": 35,
+      "coins": 7,
+      "unlock": [],
+      "hidden": false,
+      "type": "achievement"
+    },
+    {
+      "id": "ach_04",
+      "name": "Ten Decisions",
+      "desc": "Record ten total ENTRY, PASS, or SL decisions.",
+      "condition": {
+        "metric": "attempts",
+        "operator": ">=",
+        "value": 10
+      },
+      "xp": 80,
+      "coins": 16,
+      "unlock": [],
+      "hidden": false,
+      "type": "achievement"
+    },
+    {
+      "id": "ach_05",
+      "name": "Positive Cycle",
+      "desc": "Reach a positive cumulative SOL P&L.",
+      "condition": {
+        "metric": "pnl_sol",
+        "operator": ">",
+        "value": 0
+      },
+      "xp": 100,
+      "coins": 20,
+      "unlock": [],
+      "hidden": true,
+      "type": "achievement"
+    }
+  ]
+}
