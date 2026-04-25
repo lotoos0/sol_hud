@@ -1,6 +1,6 @@
 # Sol HUD
 
-![Version](https://img.shields.io/badge/version-0.6.0--MVP-00ff88?style=flat-square)
+![Version](https://img.shields.io/badge/version-0.7.0--MVP-00ff88?style=flat-square)
 ![Electron](https://img.shields.io/badge/Electron-28-47848f?style=flat-square&logo=electron)
 ![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)
 ![Platform](https://img.shields.io/badge/platform-Windows-0078d4?style=flat-square&logo=windows)
@@ -91,7 +91,7 @@ Set the number of lives (default 3) and SOL limit (default 0.15), then click **S
 ### 2. Mini-bar (collapsed view)
 
 ```
-❤️❤️❤️  W:2 L:1 67%  v0.6.0  ≡
+❤️❤️❤️  W:2 L:1 67%  v0.7.0  ≡
 ```
 
 Click `≡` to expand the panel.
@@ -99,7 +99,7 @@ Click `≡` to expand the panel.
 ### 3. Expanded panel
 
 ```
-❤️❤️❤️  v0.6.0 MVP  ×
+❤️❤️❤️  v0.7.0 MVP  ×
 ┌─────────┬─────────┐
 │Attempts │  Wins   │
 │    3    │    2    │
