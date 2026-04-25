@@ -31,6 +31,15 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [0.4.0] - 2026-04-25
+
+### Added
+
+- Added `storage/playerStore.js` for loading, creating, and saving `sessions/player.json`.
+- Added `storage/playerStore.js` to the local JavaScript syntax validation script.
+
+---
+
 ## [0.3.0] - 2026-04-25
 
 ### Added
@@ -74,7 +83,7 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 - Frameless, transparent Electron overlay (always on top, 280 px)
 - Start screen with configuration: number of lives (1-5) and SOL limit
-- Lives system with ❤️/🖤 display (full/empty)
+- Lives system with hearts display (full/empty)
 - Mini-bar (44 px) displaying lives, W/L stats, and win-rate
 - Expanded panel with a 2x2 stats grid (attempts, wins, win rate, passive)
 - Checklist with 4 fields (chart, narrative, bubblemap, holders) - min. 3 unlock ENTRY
@@ -91,7 +100,8 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ---
 
-[Unreleased]: https://github.com/lotoos0/sol_hud/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/lotoos0/sol_hud/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/lotoos0/sol_hud/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/lotoos0/sol_hud/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/lotoos0/sol_hud/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/lotoos0/sol_hud/compare/v0.1.0...v0.1.1
