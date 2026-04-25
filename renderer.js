@@ -1,4 +1,27 @@
 const PASSIVE_TIMEOUT = 5 * 60 * 1000;
+const RANK_TABLE = [
+  { rank: 'Rookie', rank_level: 1, xp_required: 0, feature_unlock: 'basic_hud' },
+  { rank: 'Scout', rank_level: 2, xp_required: 100, feature_unlock: 'session_history' },
+  { rank: 'Operator', rank_level: 3, xp_required: 250, feature_unlock: 'quest_tracking' },
+  { rank: 'Strategist', rank_level: 4, xp_required: 500, feature_unlock: 'boss_fights' },
+  { rank: 'Specialist', rank_level: 5, xp_required: 900, feature_unlock: 'achievements' },
+  { rank: 'Veteran', rank_level: 6, xp_required: 1400, feature_unlock: 'advanced_stats' },
+  { rank: 'Legend', rank_level: 7, xp_required: 2200, feature_unlock: 'prestige' }
+];
+const XP_TABLE = {
+  entry_4_4: 15,
+  entry_3_4: 8,
+  pass: 5,
+  win_session: 30,
+  no_passive_session: 20
+};
+const COIN_TABLE = {
+  pass_with_reason: 5,
+  entry_4_4: 10,
+  sl_logged: 3,
+  session_no_tilt: 15,
+  session_with_review: 8
+};
 const HEART_FULL = '\u2764\uFE0F';
 const HEART_EMPTY = '\uD83D\uDDA4';
 
@@ -58,6 +81,67 @@ const checklistInputs = Array.from(document.querySelectorAll('.checklist input')
 const checklistKeys = ['chart', 'narrative', 'bubblemap', 'holders'];
 
 const sessionOver = document.getElementById('session-over');
+
+function getRankFromXP(xp) {
+  const normalizedXP = Number.isFinite(xp) ? xp : 0;
+  let currentRank = RANK_TABLE[0];
+
+  for (const rank of RANK_TABLE) {
+    if (normalizedXP < rank.xp_required) {
+      return currentRank;
+    }
+
+    currentRank = rank;
+  }
+
+  return currentRank;
+}
+
+function getCheckedCount() {
+  return Object.values(session.checklist).filter(Boolean).length;
+}
+
+function calcTradeXP(type, checkedCount) {
+  if (type === 'ENTRY') {
+    if (checkedCount >= 4) {
+      return { xp: XP_TABLE.entry_4_4, coins: COIN_TABLE.entry_4_4 };
+    }
+
+    if (checkedCount >= 3) {
+      return { xp: XP_TABLE.entry_3_4, coins: 0 };
+    }
+  }
+
+  if (type === 'PASS') {
+    return { xp: XP_TABLE.pass, coins: COIN_TABLE.pass_with_reason };
+  }
+
+  if (type === 'SL') {
+    return { xp: 0, coins: COIN_TABLE.sl_logged };
+  }
+
+  return { xp: 0, coins: 0 };
+}
+
+function calcSessionXP(sessionSummary) {
+  const wins = Number(sessionSummary.wins) || 0;
+  const attempts = Number(sessionSummary.attempts) || 0;
+  const passiveEvents = Number(sessionSummary.passiveEvents) || 0;
+  let xp = 0;
+  let coins = 0;
+
+  if (attempts > 0 && wins > attempts - wins) {
+    xp += XP_TABLE.win_session;
+    coins += COIN_TABLE.session_no_tilt;
+  }
+
+  if (passiveEvents === 0) {
+    xp += XP_TABLE.no_passive_session;
+    coins += COIN_TABLE.session_with_review;
+  }
+
+  return { xp, coins };
+}
 
 function validateStartInputs() {
   const lives = Number(livesInput.value);
