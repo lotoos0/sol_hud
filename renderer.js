@@ -38,6 +38,8 @@ function createDefaultSession() {
     slHits: 0,
     locked: false,
     expanded: false,
+    isComeback: false,
+    rewardsApplied: false,
     checklist: {
       chart: false,
       narrative: false,
@@ -55,6 +57,7 @@ function createDefaultSession() {
 const session = createDefaultSession();
 
 let passiveTimer = null;
+let playerData = null;
 
 const startScreen = document.getElementById('start-screen');
 const livesInput = document.getElementById('cfg-lives');
@@ -81,6 +84,8 @@ const checklistInputs = Array.from(document.querySelectorAll('.checklist input')
 const checklistKeys = ['chart', 'narrative', 'bubblemap', 'holders'];
 
 const sessionOver = document.getElementById('session-over');
+const loginBonusToast = document.getElementById('login-bonus-toast');
+const comebackBanner = document.getElementById('comeback-banner');
 
 function getRankFromXP(xp) {
   const normalizedXP = Number.isFinite(xp) ? xp : 0;
@@ -141,6 +146,208 @@ function calcSessionXP(sessionSummary) {
   }
 
   return { xp, coins };
+}
+
+function todayString() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function daysDiff(fromDate, toDate) {
+  if (!fromDate || !toDate) {
+    return 0;
+  }
+
+  const from = new Date(`${fromDate}T00:00:00.000Z`);
+  const to = new Date(`${toDate}T00:00:00.000Z`);
+
+  if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime())) {
+    return 0;
+  }
+
+  return Math.floor((to - from) / (24 * 60 * 60 * 1000));
+}
+
+function yesterdayString() {
+  const yesterday = new Date();
+  yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+
+  return yesterday.toISOString().slice(0, 10);
+}
+
+function showToast(message) {
+  if (!loginBonusToast) {
+    return;
+  }
+
+  loginBonusToast.textContent = message;
+  loginBonusToast.hidden = false;
+  loginBonusToast.classList.remove('toast-flash');
+  void loginBonusToast.offsetWidth;
+  loginBonusToast.classList.add('toast-flash');
+
+  setTimeout(() => {
+    loginBonusToast.hidden = true;
+  }, 3000);
+}
+
+function ensurePlayerShape(player) {
+  const rank = getRankFromXP(Number(player.xp) || 0);
+  const streakValue =
+    typeof player.streak === 'number' ? player.streak : Number(player.streak?.current) || 0;
+  const bestStreakValue =
+    Number(player.best_streak) || Number(player.streak?.best) || streakValue || 0;
+
+  player.xp = Number(player.xp) || 0;
+  player.coins = Number(player.coins) || 0;
+  player.rank = player.rank || rank.rank;
+  player.rank_level = Number(player.rank_level) || Number(player.level) || rank.rank_level;
+  player.level = Number(player.level) || rank.rank_level;
+  player.streak = streakValue;
+  player.best_streak = bestStreakValue;
+  player.total_sessions = Number(player.total_sessions) || Number(player.stats?.sessions) || 0;
+  player.total_attempts = Number(player.total_attempts) || Number(player.stats?.attempts) || 0;
+  player.total_wins = Number(player.total_wins) || Number(player.stats?.wins) || 0;
+  player.total_losses = Number(player.total_losses) || Number(player.stats?.losses) || 0;
+  player.total_passive_events =
+    Number(player.total_passive_events) || Number(player.stats?.passive_events) || 0;
+  player.total_sl_hits = Number(player.total_sl_hits) || Number(player.stats?.sl_hits) || 0;
+  player.total_pnl_sol = Number(player.total_pnl_sol) || Number(player.stats?.pnl_sol) || 0;
+  player.last_session_date = player.last_session_date || null;
+  player.rusty = Boolean(player.rusty);
+  player.consecutive_days_off = Number(player.consecutive_days_off) || 0;
+  player.stats = {
+    ...(player.stats || {}),
+    sessions: player.total_sessions,
+    attempts: player.total_attempts,
+    wins: player.total_wins,
+    losses: player.total_losses,
+    passive_events: player.total_passive_events,
+    sl_hits: player.total_sl_hits,
+    pnl_sol: player.total_pnl_sol,
+    win_rate:
+      player.total_attempts === 0
+        ? 0
+        : Math.round((player.total_wins / player.total_attempts) * 100)
+  };
+
+  return player;
+}
+
+function syncPlayerRank() {
+  const nextRank = getRankFromXP(playerData.xp);
+  const previousRankLevel = Number(playerData.rank_level) || 1;
+
+  playerData.rank = nextRank.rank;
+  playerData.rank_level = nextRank.rank_level;
+  playerData.level = nextRank.rank_level;
+
+  return nextRank.rank_level > previousRankLevel;
+}
+
+async function checkDailyBonus() {
+  const today = todayString();
+  const previousSessionDate = playerData.last_session_date;
+  const currentRank = getRankFromXP(playerData.xp);
+  let changed = false;
+
+  if (previousSessionDate !== today && currentRank.rank_level >= 4) {
+    playerData.xp += 25;
+    changed = true;
+
+    if (previousSessionDate === yesterdayString()) {
+      playerData.coins += 10;
+    }
+
+    if (syncPlayerRank()) {
+      showToast(`RANK UP: ${playerData.rank}`);
+    } else {
+      showToast('LOGIN BONUS +25 XP');
+    }
+  }
+
+  const daysOff = daysDiff(previousSessionDate, today);
+
+  if (daysOff > 3) {
+    playerData.rusty = true;
+    playerData.consecutive_days_off = daysOff;
+    changed = true;
+  }
+
+  if (changed) {
+    await window.electronAPI.savePlayer(playerData);
+  }
+}
+
+async function applySessionRewards() {
+  if (session.rewardsApplied || !playerData) {
+    return;
+  }
+
+  session.rewardsApplied = true;
+
+  const tradeRewards = session.trades.reduce(
+    (totals, trade) => {
+      const reward = calcTradeXP(trade.type, Number(trade.checked_count) || 0);
+
+      return {
+        xp: totals.xp + reward.xp,
+        coins: totals.coins + reward.coins
+      };
+    },
+    { xp: 0, coins: 0 }
+  );
+  const sessionRewards = calcSessionXP({
+    wins: session.wins,
+    attempts: session.attempts,
+    passiveEvents: session.passiveEvents
+  });
+  const sessionMultiplier = session.isComeback ? 2 : 1;
+  const earnedXP = (tradeRewards.xp + sessionRewards.xp) * sessionMultiplier;
+  const earnedCoins = tradeRewards.coins + sessionRewards.coins;
+  const sessionWon = session.attempts > 0 && session.wins / session.attempts > 0.5;
+
+  // Quest completion checks will be attached in a later quest progression task.
+  playerData.xp += earnedXP;
+  playerData.coins += earnedCoins;
+  playerData.total_sessions++;
+  playerData.total_attempts += session.attempts;
+  playerData.total_wins += session.wins;
+  playerData.total_losses += session.losses;
+  playerData.total_passive_events += session.passiveEvents;
+  playerData.total_sl_hits += session.slHits;
+  playerData.total_pnl_sol += session.pnl_sol;
+  playerData.streak = sessionWon ? playerData.streak + 1 : 0;
+
+  if (playerData.streak > playerData.best_streak) {
+    playerData.best_streak = playerData.streak;
+  }
+
+  if (session.isComeback) {
+    playerData.rusty = false;
+    playerData.consecutive_days_off = 0;
+  }
+
+  playerData.last_session_date = todayString();
+  playerData.stats = {
+    ...(playerData.stats || {}),
+    sessions: playerData.total_sessions,
+    attempts: playerData.total_attempts,
+    wins: playerData.total_wins,
+    losses: playerData.total_losses,
+    passive_events: playerData.total_passive_events,
+    sl_hits: playerData.total_sl_hits,
+    pnl_sol: playerData.total_pnl_sol,
+    win_rate:
+      playerData.total_attempts === 0
+        ? 0
+        : Math.round((playerData.total_wins / playerData.total_attempts) * 100)
+  };
+
+  if (syncPlayerRank()) {
+    showToast(`RANK UP: ${playerData.rank}`);
+  }
+
+  await window.electronAPI.savePlayer(playerData);
 }
 
 function validateStartInputs() {
@@ -321,7 +528,7 @@ function readPnlAmount() {
   return Math.abs(value);
 }
 
-function logTrade(type, pnlAmount = 0) {
+function logTrade(type, pnlAmount = 0, checkedCount = 0) {
   if (!session.startedAt) {
     session.startedAt = new Date().toISOString();
   }
@@ -333,7 +540,8 @@ function logTrade(type, pnlAmount = 0) {
     attempts: session.attempts,
     wins: session.wins,
     losses: session.losses,
-    pnl_amount: pnlAmount
+    pnl_amount: pnlAmount,
+    checked_count: checkedCount
   });
 }
 
@@ -371,9 +579,10 @@ async function onEntry() {
 
   session.attempts++;
   session.wins++;
+  const checkedCount = getCheckedCount();
   const pnlAmount = readPnlAmount();
   session.pnl_sol += pnlAmount;
-  logTrade('ENTRY', pnlAmount);
+  logTrade('ENTRY', pnlAmount, checkedCount);
   pnlInput.value = '';
   resetChecklist();
   resetPassiveTimer();
@@ -388,7 +597,7 @@ async function onPass() {
 
   session.attempts++;
   session.losses++;
-  logTrade('PASS');
+  logTrade('PASS', 0, getCheckedCount());
   resetChecklist();
   resetPassiveTimer();
   renderAll();
@@ -406,7 +615,7 @@ async function onSL() {
   session.losses++;
   const pnlAmount = readPnlAmount();
   session.pnl_sol -= pnlAmount;
-  logTrade('SL', pnlAmount);
+  logTrade('SL', pnlAmount, getCheckedCount());
   pnlInput.value = '';
   resetChecklist();
   resetPassiveTimer();
@@ -502,6 +711,7 @@ async function initSession(config) {
     maxLives: config.lives,
     startedAt: new Date().toISOString(),
     windowPos,
+    isComeback: playerData.rusty === true,
     config: {
       lives: config.lives,
       sol_limit: config.solLimit
@@ -510,6 +720,7 @@ async function initSession(config) {
 
   sessionOver.hidden = true;
   summaryScreen.hidden = true;
+  comebackBanner.hidden = !session.isComeback;
   endSessionButton.hidden = false;
   hudContainer.classList.remove('is-expanded', 'is-locked', 'is-summary', 'passive-alert');
   expandedPanel.hidden = true;
@@ -548,6 +759,7 @@ async function showSummary() {
   expandedPanel.hidden = false;
   miniBar.hidden = true;
   window.electronAPI.resizeWindow(400);
+  await applySessionRewards();
 }
 
 function resetToStartScreen() {
@@ -556,6 +768,7 @@ function resetToStartScreen() {
   clearTimeout(passiveTimer);
   summaryScreen.hidden = true;
   sessionOver.hidden = true;
+  comebackBanner.hidden = true;
   endSessionButton.hidden = false;
   hudContainer.hidden = true;
   hudContainer.classList.remove('is-expanded', 'is-locked', 'is-summary', 'passive-alert');
@@ -579,7 +792,11 @@ async function init() {
     session.windowPos = { x: 10, y: 10 };
   }
 
+  playerData = ensurePlayerShape(await window.electronAPI.loadPlayer());
+  await checkDailyBonus();
+
   hudContainer.hidden = true;
+  comebackBanner.hidden = true;
   startScreen.hidden = false;
   await window.electronAPI.resizeWindow(180);
   window.electronAPI.setIgnoreMouse(false);
