@@ -1,6 +1,8 @@
 const { app, BrowserWindow, ipcMain, screen, shell } = require('electron');
 const fs = require('fs');
 const path = require('path');
+const playerStore = require('./storage/playerStore');
+const questStore = require('./storage/questStore');
 
 let win;
 const sessionsDir = path.join(__dirname, 'sessions');
@@ -69,6 +71,30 @@ app.whenReady().then(() => {
     fs.writeFileSync(file, JSON.stringify(data, null, 2));
 
     return { ok: true, path: file };
+  });
+
+  ipcMain.handle('load-player', () => {
+    return playerStore.loadPlayer();
+  });
+
+  ipcMain.handle('save-player', (_event, data) => {
+    playerStore.savePlayer(data);
+
+    return { ok: true };
+  });
+
+  ipcMain.handle('load-quests-state', () => {
+    return questStore.loadQuestsState();
+  });
+
+  ipcMain.handle('save-quests-state', (_event, data) => {
+    questStore.saveQuestsState(data);
+
+    return { ok: true };
+  });
+
+  ipcMain.handle('load-quest-defs', () => {
+    return questStore.loadQuestDefs();
   });
 
   ipcMain.handle('load-position', () => {
