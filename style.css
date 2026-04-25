@@ -47,6 +47,36 @@ body {
   -webkit-app-region: no-drag;
 }
 
+#tilt-alert,
+#boss-defeated-toast {
+  position: absolute;
+  top: 44px;
+  left: 50%;
+  z-index: 6;
+  width: max-content;
+  max-width: 240px;
+  box-sizing: border-box;
+  padding: 7px 10px;
+  border-radius: 7px;
+  background: rgba(10, 10, 15, 0.96);
+  font-size: 13px;
+  font-weight: 900;
+  text-align: center;
+  transform: translateX(-50%);
+  -webkit-app-region: no-drag;
+}
+
+#tilt-alert {
+  color: var(--danger);
+  text-shadow: 0 0 10px rgba(255, 51, 102, 0.65);
+}
+
+#boss-defeated-toast {
+  color: var(--accent);
+  border: 1px solid rgba(0, 255, 136, 0.65);
+  box-shadow: 0 0 14px rgba(0, 255, 136, 0.45);
+}
+
 .toast-flash {
   animation: toast-flash 3s ease forwards;
 }
@@ -137,7 +167,7 @@ body {
 }
 
 #hud-container.is-expanded {
-  height: 400px;
+  height: 460px;
 }
 
 #hud-container.is-locked {
@@ -145,7 +175,36 @@ body {
 }
 
 #hud-container.is-summary {
-  height: 400px;
+  height: 460px;
+}
+
+.hot-border {
+  border-color: rgba(0, 255, 136, 0.9) !important;
+  box-shadow: 0 0 12px rgba(0, 255, 136, 0.35);
+}
+
+.cold-border {
+  border-color: rgba(255, 51, 102, 0.9) !important;
+  box-shadow: 0 0 12px rgba(255, 51, 102, 0.35);
+}
+
+.tilt-yellow {
+  border-color: #ffcc00 !important;
+  box-shadow: 0 0 16px rgba(255, 204, 0, 0.5);
+}
+
+.tilt-blue {
+  border-color: #00aaff !important;
+  box-shadow: 0 0 16px rgba(0, 170, 255, 0.5);
+}
+
+.tilt-red {
+  border-color: var(--danger) !important;
+  animation: pulse-border 0.8s ease-in-out infinite;
+}
+
+.timer-warning {
+  animation: pulse-border 1.2s ease-in-out infinite;
 }
 
 #comeback-banner {
@@ -161,6 +220,38 @@ body {
   text-shadow: 0 0 8px rgba(0, 255, 136, 0.55);
   animation: neon-flash 1.8s ease-in-out infinite;
   -webkit-app-region: no-drag;
+}
+
+#boss-fight-banner {
+  margin: 8px 0;
+  padding: 7px;
+  border: 1px solid rgba(0, 255, 136, 0.65);
+  border-radius: 7px;
+  background: rgba(0, 255, 136, 0.08);
+  animation: neon-flash 1.8s ease-in-out infinite;
+  -webkit-app-region: no-drag;
+}
+
+#boss-fight-banner h3 {
+  margin: 0 0 3px;
+  color: var(--accent);
+  font-size: 12px;
+  text-align: center;
+}
+
+#boss-fight-banner p {
+  margin: 0 0 4px;
+  color: rgba(239, 255, 247, 0.82);
+  font-size: 10px;
+  line-height: 1.25;
+}
+
+#boss-timer {
+  display: block;
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 800;
+  text-align: center;
 }
 
 .mini-bar {
@@ -190,6 +281,21 @@ body {
   font-weight: 700;
   text-align: center;
   text-shadow: 0 0 7px rgba(0, 255, 136, 0.55);
+}
+
+#streak-display {
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.streak-positive {
+  color: var(--accent);
+  text-shadow: 0 0 6px rgba(0, 255, 136, 0.55);
+}
+
+.streak-negative {
+  color: var(--danger);
 }
 
 .version-mini {
@@ -239,6 +345,13 @@ button:hover {
   justify-content: space-between;
   margin-bottom: 8px;
   -webkit-app-region: drag;
+}
+
+#session-timer {
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 .stats-grid {
@@ -357,7 +470,12 @@ label,
 .action-buttons,
 #pnl-display,
 #session-over,
-#summary-screen {
+#summary-screen,
+#streak-display,
+#session-timer,
+#tilt-alert,
+#boss-fight-banner,
+#boss-defeated-toast {
   -webkit-app-region: no-drag;
 }
 
