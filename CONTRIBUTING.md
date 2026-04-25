@@ -75,6 +75,18 @@ fix/<description>      # e.g. fix/passive-timer-reset
 
 Work on a `feature/*` or `fix/*` branch, and submit PRs to `dev`.
 
+### Main branch protection
+
+The `main` branch should stay releasable. Recommended GitHub rules:
+
+- Require a pull request before merging.
+- Require at least 1 approving review.
+- Require status checks to pass before merging: `validate`.
+- Require branches to be up to date before merging.
+- Require conversation resolution before merging.
+- Block force pushes and branch deletion.
+- Allow administrators to bypass only for emergency fixes.
+
 ### Manual testing
 
 There are no automated tests. Before a PR, test manually:

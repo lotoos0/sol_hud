@@ -31,6 +31,21 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [0.3.0] - 2026-04-25
+
+### Added
+
+- Added a GitHub Actions CI workflow for dependency install and JavaScript syntax checks.
+- Added a reproducible GitHub branch protection configuration for `main`.
+- Added npm `check` and `test` scripts for local validation.
+- Documented recommended `main` branch protection rules.
+
+### Changed
+
+- Updated documented MVP version references to `0.3.0`.
+
+---
+
 ## [0.2.0] - 2026-04-25
 
 ### Added
@@ -76,7 +91,8 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ---
 
-[Unreleased]: https://github.com/lotoos0/sol_hud/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/lotoos0/sol_hud/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/lotoos0/sol_hud/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/lotoos0/sol_hud/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/lotoos0/sol_hud/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/lotoos0/sol_hud/releases/tag/v0.1.0
