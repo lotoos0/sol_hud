@@ -36,7 +36,7 @@ This project uses [Semantic Versioning](https://semver.org/).
 ### Added
 
 - Added a GitHub Actions CI workflow for dependency install and JavaScript syntax checks.
-- Added a reproducible GitHub branch protection configuration for `main`.
+- Added a reproducible GitHub branch protection configuration for `main` with PRs and CI required.
 - Added npm `check` and `test` scripts for local validation.
 - Documented recommended `main` branch protection rules.
 

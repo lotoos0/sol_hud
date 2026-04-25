@@ -80,7 +80,7 @@ Work on a `feature/*` or `fix/*` branch, and submit PRs to `dev`.
 The `main` branch should stay releasable. Recommended GitHub rules:
 
 - Require a pull request before merging.
-- Require at least 1 approving review.
+- Do not require approving reviews while this is a solo-maintained project.
 - Require status checks to pass before merging: `validate`.
 - Require branches to be up to date before merging.
 - Require conversation resolution before merging.
