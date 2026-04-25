@@ -4,25 +4,25 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ---
 
-## Komendy
+## Commands
 
 ```bash
-# Instalacja zależności
+# Install dependencies
 npm install
 
-# Uruchomienie aplikacji
+# Start the app
 npm start
 ```
 
-Brak kroku budowania, lintera ani testów automatycznych.
+No build step, linter, or automated tests.
 
 ---
 
-## Architektura
+## Architecture
 
-Aplikacja to **Electron desktop overlay** — przezroczyste, frameless okno (280 px) zawsze na wierzchu ekranu, przeznaczone dla traderów SOL.
+The app is an **Electron desktop overlay** - a transparent, frameless window (280 px) that always stays on top of the screen, intended for SOL traders.
 
-### Diagram procesów
+### Process diagram
 
 ```mermaid
 graph TD
@@ -49,21 +49,21 @@ graph TD
     style H fill:#1a1a2e,color:#effff7
 ```
 
-### Pliki projektu
+### Project files
 
-| Plik | Rola |
+| File | Role |
 |------|------|
-| `main.js` | Electron main process — tworzy `BrowserWindow`, obsługuje IPC, zapisuje/czyta pliki |
-| `preload.js` | Context bridge — eksponuje `window.electronAPI` z `contextIsolation: true` |
-| `renderer.js` | Cała logika UI — własny obiekt `session` w pamięci, wywołuje `electronAPI.*` dla FS |
-| `index.html` | Statyczny markup — 3 widoki: start-screen, hud-container, summary-screen |
-| `style.css` | Dark theme z CSS custom properties, animacje, `-webkit-app-region` dla drag |
-| `sessions/*.json` | Persystowane sesje tradingowe (auto-zapis po każdej akcji) |
-| `sessions/_window.json` | Pozycja okna między uruchomieniami |
+| `main.js` | Electron main process - creates `BrowserWindow`, handles IPC, writes/reads files |
+| `preload.js` | Context bridge - exposes `window.electronAPI` with `contextIsolation: true` |
+| `renderer.js` | All UI logic - custom in-memory `session` object, calls `electronAPI.*` for FS |
+| `index.html` | Static markup - 3 views: start-screen, hud-container, summary-screen |
+| `style.css` | Dark theme with CSS custom properties, animations, `-webkit-app-region` for drag |
+| `sessions/*.json` | Persisted trading sessions (auto-save after each action) |
+| `sessions/_window.json` | Window position between launches |
 
 ---
 
-## Cykl życia sesji
+## Session lifecycle
 
 ```mermaid
 stateDiagram-v2
@@ -78,43 +78,43 @@ stateDiagram-v2
     Summary --> StartScreen : End / Export & New (320→180px)
 ```
 
-**Kluczowe reguły stanu:**
+**Key state rules:**
 
-- `session.locked = true` → wszystkie przyciski akcji disabled
-- ENTRY wymaga min. 3/4 checkboxów zaznaczonych (`session.checklist`)
-- `session.startedAt` ustawiane przy pierwszym trade (nie przy START SESSION)
-- `autoSave()` wywoływany po każdej akcji i przy każdym zdarzeniu pasywnym
+- `session.locked = true` -> all action buttons are disabled
+- ENTRY requires min. 3/4 selected checkboxes (`session.checklist`)
+- `session.startedAt` is set on the first trade (not on START SESSION)
+- `autoSave()` is called after each action and each passive event
 
 ---
 
 ## IPC surface
 
-| Kanał | Typ | Kierunek | Działanie |
+| Channel | Type | Direction | Action |
 |-------|-----|----------|-----------|
 | `resize-window` | invoke | renderer→main | `win.setSize(280, h)` |
-| `save-session` | invoke | renderer→main | Zapis `sessions/<id>.json` |
-| `load-position` | invoke | renderer→main | Odczyt `_window.json` |
-| `save-position` | invoke | renderer→main | Zapis `_window.json` |
-| `get-session-ids` | invoke | renderer→main | Lista plików `.json` w `sessions/` |
+| `save-session` | invoke | renderer→main | Write `sessions/<id>.json` |
+| `load-position` | invoke | renderer→main | Read `_window.json` |
+| `save-position` | invoke | renderer→main | Write `_window.json` |
+| `get-session-ids` | invoke | renderer→main | List `.json` files in `sessions/` |
 | `open-sessions-folder` | invoke | renderer→main | `shell.openPath(sessionsDir)` |
 | `get-screen-size` | invoke | renderer→main | `screen.getPrimaryDisplay().workAreaSize` |
 | `set-ignore-mouse` | send (one-way) | renderer→main | `win.setIgnoreMouseEvents(bool, {forward:true})` |
-| `window-position-changed` | send (one-way) | main→renderer | Emitowane na zdarzenie `win.on('move')` |
+| `window-position-changed` | send (one-way) | main→renderer | Emitted on the `win.on('move')` event |
 
 ---
 
-## Zmienne środowiskowe i sekrety
+## Environment variables and secrets
 
-Brak. Aplikacja nie używa żadnych zmiennych środowiskowych ani kluczy API.
-Wszystkie dane są lokalne (pliki JSON na dysku użytkownika).
+None. The app does not use any environment variables or API keys.
+All data is local (JSON files on the user's disk).
 
 ---
 
-## Regiony drag / click-through
+## Drag regions / click-through
 
-- `-webkit-app-region: drag` jest na: `.mini-bar`, `.panel-header`, `#start-screen`
-- `-webkit-app-region: no-drag` nadpisuje interaktywne elementy (przyciski, inputy, checkboksy)
-- Click-through (`setIgnoreMouseEvents`) przełączany przez `mousemove` hit-testing w `renderer.js`:
+- `-webkit-app-region: drag` is on: `.mini-bar`, `.panel-header`, `#start-screen`
+- `-webkit-app-region: no-drag` overrides interactive elements (buttons, inputs, checkboxes)
+- Click-through (`setIgnoreMouseEvents`) is toggled by `mousemove` hit-testing in `renderer.js`:
 
 ```js
 document.addEventListener('mousemove', (e) => {
@@ -126,9 +126,9 @@ document.addEventListener('mousemove', (e) => {
 
 ---
 
-## Wysokości okna
+## Window heights
 
-| Stan | Wysokość CSS | `resizeWindow()` call |
+| State | CSS height | `resizeWindow()` call |
 |------|-------------|----------------------|
 | Start screen | 180 px | `resizeWindow(180)` |
 | Mini-bar | 44 px | `resizeWindow(44)` |
@@ -138,13 +138,13 @@ document.addEventListener('mousemove', (e) => {
 
 ---
 
-## Schemat pliku sesji
+## Session file schema
 
 ```json
 {
   "session_id": "YYYY-MM-DD_NNN",
-  "started_at": "<ISO8601 lub null>",
-  "ended_at":   "<ISO8601 lub null>",
+  "started_at": "<ISO8601 or null>",
+  "ended_at":   "<ISO8601 or null>",
   "config":     { "lives": 3, "sol_limit": 0.15 },
   "summary": {
     "attempts": 0,
@@ -170,22 +170,22 @@ document.addEventListener('mousemove', (e) => {
 
 ---
 
-## Znane problemy / Troubleshooting
+## Known issues / Troubleshooting
 
-| Problem | Przyczyna | Rozwiązanie |
+| Problem | Cause | Solution |
 |---------|-----------|-------------|
-| DevTools otwierają się automatycznie | `win.webContents.openDevTools()` w `createWindow()` w `main.js:54` | Usuń tę linię dla buildu produkcyjnego |
-| Okno pojawia się poza ekranem | Stara pozycja w `_window.json` po zmianie rozdzielczości | Usuń `sessions/_window.json` |
-| `ENTRY` zawsze disabled | Nie ukończono min. 3 checkboxów lub `session.locked = true` | Zaznacz checkboksy, sprawdź stan sesji w DevTools |
-| Sesja nie zapisuje się | `sessions/` nie istnieje (pierwszy start) | `ensureSessionsDir()` tworzy katalog automatycznie; sprawdź prawa do zapisu |
+| DevTools open automatically | `win.webContents.openDevTools()` in `createWindow()` in `main.js:54` | Remove this line for the production build |
+| Window appears off-screen | Old position in `_window.json` after resolution change | Delete `sessions/_window.json` |
+| `ENTRY` is always disabled | Min. 3 checkboxes not completed or `session.locked = true` | Select checkboxes, check session state in DevTools |
+| Session does not save | `sessions/` does not exist (first start) | `ensureSessionsDir()` creates the directory automatically; check write permissions |
 
 ---
 
 ## Monitoring / Observability
 
-Brak zewnętrznego monitoringu. Debug dostępny przez wbudowane DevTools Electrona (otwierają się automatycznie w obecnej wersji).
+No external monitoring. Debugging is available through Electron's built-in DevTools (they open automatically in the current version).
 
-Użyteczne miejsca do logowania w `renderer.js`:
+Useful places to log in `renderer.js`:
 
-- `console.error('Auto-save failed:', error)` — błędy zapisu sesji
-- Stan sesji live: w DevTools wpisz `session` (obiekt jest w scope modułu)
+- `console.error('Auto-save failed:', error)` - session write errors
+- Live session state: in DevTools, type `session` (the object is in module scope)

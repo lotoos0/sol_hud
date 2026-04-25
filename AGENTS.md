@@ -1,35 +1,35 @@
-# Instrukcje pracy
+# Working instructions
 
-## Przed każdym taskiem
+## Before each task
 
-- Twórz nowy branch według zasad Conventional Commits.
+- Create a new branch according to Conventional Commits rules.
 
-## W trakcie
+## During work
 
-- Aktualizuj wersję aplikacji zgodnie z SemVer (MAJOR.MINOR.PATCH) oraz samodzielnie identyfikuj typ zmian na podstawie diffu, opisu zadania, changelogu i wpływu na kompatybilność.
+- Update the application version according to SemVer (MAJOR.MINOR.PATCH), and independently identify the change type based on the diff, task description, changelog, and compatibility impact.
 
-Zwiększ PATCH (0.0.x, 1.2.x), gdy zmiana dotyczy wyłącznie poprawek błędów, refaktoryzacji bez zmiany zachowania publicznego, drobnych poprawek UI lub dokumentacji bez wpływu na API i logikę biznesową.
+Increase PATCH (0.0.x, 1.2.x) when the change concerns only bug fixes, refactoring without public behavior changes, small UI fixes, or documentation without impact on the API and business logic.
 
-Zwiększ MINOR (0.x.0, 1.x.0), gdy dodajesz nową funkcjonalność kompatybilną wstecz, nowy endpoint, nowe pole opcjonalne, nowy ekran, nową integrację albo oznaczasz element jako deprecated bez łamania dotychczasowego działania.
+Increase MINOR (0.x.0, 1.x.0) when you add backward-compatible new functionality, a new endpoint, a new optional field, a new screen, a new integration, or mark an element as deprecated without breaking existing behavior.
 
-Zwiększ MAJOR (x.0.0), gdy zmiana łamie kompatybilność, np. usuwasz lub zmieniasz publiczny endpoint, zmieniasz kontrakt danych, wymagane pola, nazwy parametrów, zachowanie istniejącej funkcji albo sposób integracji po stronie klienta.
+Increase MAJOR (x.0.0) when the change breaks compatibility, for example by removing or changing a public endpoint, changing the data contract, required fields, parameter names, existing function behavior, or the client-side integration method.
 
-Po zwiększeniu MINOR wyzeruj PATCH, a po zwiększeniu MAJOR wyzeruj MINOR i PATCH.
+After increasing MINOR, reset PATCH; after increasing MAJOR, reset MINOR and PATCH.
 
-Jeśli projekt jest nadal na etapie MVP lub niestabilnego API, używaj wersji 0.y.z; wtedy nadal identyfikuj zmiany jako fix / feature / breaking, ale utrzymuj numer główny 0 aż do momentu uznania produktu za stabilny.
+If the project is still in the MVP stage or has an unstable API, use version 0.y.z; still identify changes as fix / feature / breaking, but keep the major number at 0 until the product is considered stable.
 
-## Po wykonanym tasku
+## After completing a task
 
-- Wykonaj review zmian.
-- Stwórz/zaaktualizuj plik CHANGELOG.md.
-- Jeśli potrzeba, zrób update docs.
-- Jeśli wszystko [OK]:
-  - Otwórz PR - `git add .`, `git commit -m "feat/minor/fix/breaking: [krótki opis]"` z odpowiednim prefixem SemVer.
-  - Push do brancha i stwórz PR z linkiem.
-  - Podaj link do PR w podsumowaniu.
-  - Zaktualizuj wersję w `package.json` / `Dockerfile` / `Chart.yaml` wg SemVer.
-- Jeśli [NG]:
-  - Opisz konkretny problem (błąd kompilacji, testy NG, linter, brakujące testy).
-  - Podaj logi błędu (ostatnie 10 linii).
-  - Zaproponuj fix lub czekaj na feedback.
-  - **NIE twórz PR** z błędami.
+- Review the changes.
+- Create/update `CHANGELOG.md`.
+- Update docs if needed.
+- If everything is [OK]:
+  - Open a PR - `git add .`, `git commit -m "feat/minor/fix/breaking: [short description]"` with the appropriate SemVer prefix.
+  - Push to the branch and create a PR with a link.
+  - Provide the PR link in the summary.
+  - Update the version in `package.json` / `Dockerfile` / `Chart.yaml` according to SemVer.
+- If [NG]:
+  - Describe the specific problem (build error, tests NG, linter, missing tests).
+  - Provide the error logs (last 10 lines).
+  - Propose a fix or wait for feedback.
+  - **DO NOT create a PR** with errors.
