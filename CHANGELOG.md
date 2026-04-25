@@ -31,6 +31,15 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [0.4.1] - 2026-04-25
+
+### Changed
+
+- Clarified agent instructions to update stored and displayed application versions for every repository change.
+- Updated visible application version labels to `0.4.1`.
+
+---
+
 ## [0.4.0] - 2026-04-25
 
 ### Added
@@ -100,7 +109,8 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ---
 
-[Unreleased]: https://github.com/lotoos0/sol_hud/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/lotoos0/sol_hud/compare/v0.4.1...HEAD
+[0.4.1]: https://github.com/lotoos0/sol_hud/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/lotoos0/sol_hud/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/lotoos0/sol_hud/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/lotoos0/sol_hud/compare/v0.1.1...v0.2.0
