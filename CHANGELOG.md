@@ -31,6 +31,15 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [0.12.4] - 2026-04-26
+
+### Fixed
+
+- Disabled Electron Builder auto-publish during the Release workflow build step so GitHub release creation remains handled by the explicit `gh release create` step.
+- Updated visible application version labels to `0.12.4`.
+
+---
+
 ## [0.12.3] - 2026-04-26
 
 ### Fixed
@@ -257,7 +266,8 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ---
 
-[Unreleased]: https://github.com/lotoos0/sol_hud/compare/v0.12.3...HEAD
+[Unreleased]: https://github.com/lotoos0/sol_hud/compare/v0.12.4...HEAD
+[0.12.4]: https://github.com/lotoos0/sol_hud/compare/v0.12.3...v0.12.4
 [0.12.3]: https://github.com/lotoos0/sol_hud/compare/v0.12.2...v0.12.3
 [0.12.2]: https://github.com/lotoos0/sol_hud/compare/v0.12.1...v0.12.2
 [0.12.1]: https://github.com/lotoos0/sol_hud/compare/v0.12.0...v0.12.1
