@@ -36,3 +36,14 @@ If the project is still in the MVP stage or has an unstable API, use version 0.y
   - Provide the error logs (last 10 lines).
   - Propose a fix or wait for feedback.
   - **DO NOT create a PR** with errors.
+
+## Release process
+
+Releases are fully automated via GitHub Actions (`.github/workflows/release.yml`).
+
+**You do not need to build or publish anything.** After the PR is merged to `main`:
+1. The workflow reads the version from `package.json`.
+2. If a GitHub release for that version does not yet exist, it builds the Windows installer and publishes it automatically.
+3. Running app instances will detect the new release and auto-update on next quit.
+
+Your only release-related responsibility is to correctly bump the version in `package.json` (and all other version sources) as part of the PR, following the SemVer rules above.
