@@ -589,7 +589,12 @@ function setVaultVisible(visible) {
     hudContainer.classList.remove('is-expanded', 'is-summary');
     window.electronAPI.resizeWindow(500);
   } else {
-    window.electronAPI.resizeWindow(session.startedAt ? 44 : 180);
+    const targetHeight = session.expanded
+      ? 460
+      : session.startedAt
+        ? 44
+        : 180;
+    window.electronAPI.resizeWindow(targetHeight);
   }
 }
 
@@ -1104,7 +1109,7 @@ function getWinRate() {
 
 function renderStats() {
   const winRate = getWinRate();
-  statsMini.textContent = `W:${session.wins} L:${session.losses} ${winRate}%`;
+  statsMini.textContent = `W${session.wins} L${session.losses} ${winRate}%`;
 
   const values = [
     session.attempts,

@@ -31,6 +31,16 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [0.12.1] - 2026-04-26
+
+### Fixed
+
+- Tightened the mini-bar layout so Vault, settings, stats, lives, and version labels do not wrap or overflow.
+- Restored compact window sizing after closing the Vault panel.
+- Updated visible application version labels to `0.12.1`.
+
+---
+
 ## [0.12.0] - 2026-04-26
 
 ### Added
@@ -228,7 +238,8 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ---
 
-[Unreleased]: https://github.com/lotoos0/sol_hud/compare/v0.12.0...HEAD
+[Unreleased]: https://github.com/lotoos0/sol_hud/compare/v0.12.1...HEAD
+[0.12.1]: https://github.com/lotoos0/sol_hud/compare/v0.12.0...v0.12.1
 [0.12.0]: https://github.com/lotoos0/sol_hud/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/lotoos0/sol_hud/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/lotoos0/sol_hud/compare/v0.9.0...v0.10.0

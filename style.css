@@ -278,9 +278,9 @@ body {
   height: 44px;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 4px;
   box-sizing: border-box;
-  padding: 0 8px;
+  padding: 0 6px;
   -webkit-app-region: drag;
 }
 
@@ -294,12 +294,23 @@ body {
   filter: drop-shadow(0 0 4px rgba(255, 51, 102, 0.6));
 }
 
+.lives-display {
+  flex: 0 0 50px;
+  min-width: 50px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
 .stats-mini {
-  flex: 1;
+  flex: 1 1 52px;
+  min-width: 52px;
+  overflow: hidden;
   color: var(--accent);
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 700;
   text-align: center;
+  text-overflow: clip;
+  white-space: nowrap;
   text-shadow: 0 0 7px rgba(0, 255, 136, 0.55);
 }
 
@@ -319,10 +330,14 @@ body {
 }
 
 .version-mini {
+  flex: 0 0 32px;
+  overflow: hidden;
   color: rgba(239, 255, 247, 0.46);
   font-size: 9px;
   font-weight: 800;
   line-height: 1;
+  text-align: center;
+  text-overflow: clip;
   white-space: nowrap;
 }
 
@@ -346,6 +361,7 @@ button:hover {
 #btn-expand,
 #btn-collapse,
 #btn-settings {
+  flex: 0 0 28px;
   width: 28px;
   height: 28px;
   padding: 0;
@@ -356,8 +372,10 @@ button:hover {
 }
 
 #btn-vault {
+  flex: 0 0 42px;
+  width: 42px;
   height: 26px;
-  padding: 0 8px;
+  padding: 0;
   color: var(--accent);
   font-size: 10px;
 }
