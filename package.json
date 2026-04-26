@@ -25,6 +25,7 @@
       "!.github/**"
     ],
     "win": {
+      "icon": "data/Icon.png",
       "target": [
         {
           "target": "nsis",

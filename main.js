@@ -5,6 +5,7 @@ const playerStore = require('./storage/playerStore');
 const questStore = require('./storage/questStore');
 
 let win;
+let updaterWin;
 const sessionsDir = path.join(__dirname, 'sessions');
 const positionFile = path.join(sessionsDir, '_window.json');
 
@@ -25,6 +26,74 @@ function saveWindowPosition(pos) {
   fs.writeFileSync(positionFile, JSON.stringify(pos));
 }
 
+function createUpdaterWindow() {
+  const { width, height } = screen.getPrimaryDisplay().workAreaSize;
+
+  updaterWin = new BrowserWindow({
+    width: 280,
+    height: 90,
+    x: Math.round((width - 280) / 2),
+    y: Math.round((height - 90) / 2),
+    frame: false,
+    transparent: true,
+    alwaysOnTop: true,
+    resizable: false,
+    skipTaskbar: true,
+    icon: path.join(__dirname, 'data', 'Icon.png'),
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false
+    }
+  });
+
+  updaterWin.loadFile('updater.html');
+}
+
+function setupAutoUpdater() {
+  autoUpdater.autoDownload = true;
+
+  autoUpdater.on('checking-for-update', () => {
+    updaterWin?.webContents.send('updater-status', { state: 'checking' });
+  });
+
+  autoUpdater.on('update-not-available', () => {
+    updaterWin?.webContents.send('updater-status', { state: 'no-update' });
+    setTimeout(() => {
+      updaterWin?.close();
+      updaterWin = null;
+      createWindow();
+    }, 800);
+  });
+
+  autoUpdater.on('download-progress', (progress) => {
+    updaterWin?.webContents.send('updater-status', {
+      state: 'downloading',
+      percent: Math.round(progress.percent)
+    });
+  });
+
+  autoUpdater.on('update-downloaded', () => {
+    updaterWin?.webContents.send('updater-status', { state: 'restarting' });
+    setTimeout(() => autoUpdater.quitAndInstall(false, true), 1500);
+  });
+
+  autoUpdater.on('error', () => {
+    updaterWin?.webContents.send('updater-status', { state: 'error' });
+    setTimeout(() => {
+      updaterWin?.close();
+      updaterWin = null;
+      createWindow();
+    }, 600);
+  });
+
+  autoUpdater.checkForUpdates().catch(() => {
+    updaterWin?.close();
+    updaterWin = null;
+    createWindow();
+  });
+}
+
 function createWindow() {
   const pos = loadWindowPosition();
 
@@ -38,6 +107,7 @@ function createWindow() {
     alwaysOnTop: true,
     resizable: false,
     skipTaskbar: true,
+    icon: path.join(__dirname, 'data', 'Icon.png'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -149,7 +219,12 @@ app.whenReady().then(() => {
     }
   });
 
-  createWindow();
+  if (app.isPackaged) {
+    createUpdaterWindow();
+    setupAutoUpdater();
+  } else {
+    createWindow();
+  }
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
