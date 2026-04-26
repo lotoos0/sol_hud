@@ -278,9 +278,9 @@ body {
   height: 44px;
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
   box-sizing: border-box;
-  padding: 0 6px;
+  padding: 0 5px;
   -webkit-app-region: drag;
 }
 
@@ -295,18 +295,18 @@ body {
 }
 
 .lives-display {
-  flex: 0 0 50px;
-  min-width: 50px;
+  flex: 0 0 60px;
+  min-width: 60px;
   overflow: hidden;
   white-space: nowrap;
 }
 
 .stats-mini {
-  flex: 1 1 52px;
-  min-width: 52px;
+  flex: 1 1 46px;
+  min-width: 46px;
   overflow: hidden;
   color: var(--accent);
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 700;
   text-align: center;
   text-overflow: clip;
@@ -372,12 +372,12 @@ button:hover {
 }
 
 #btn-vault {
-  flex: 0 0 42px;
-  width: 42px;
+  flex: 0 0 39px;
+  width: 39px;
   height: 26px;
   padding: 0;
   color: var(--accent);
-  font-size: 10px;
+  font-size: 9px;
 }
 
 #expanded-panel {
