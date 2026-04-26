@@ -337,5 +337,112 @@
       "hidden": true,
       "type": "achievement"
     }
+  ],
+  "cosmetics": [
+    {
+      "id": "heart_diamond",
+      "category": "heart_skins",
+      "name": "Diamond",
+      "preview": "💎",
+      "price": 150
+    },
+    {
+      "id": "heart_fire",
+      "category": "heart_skins",
+      "name": "Fire",
+      "preview": "🔥",
+      "price": 120
+    },
+    {
+      "id": "heart_neon",
+      "category": "heart_skins",
+      "name": "Neon",
+      "preview": "💚",
+      "price": 100
+    },
+    {
+      "id": "heart_shadow",
+      "category": "heart_skins",
+      "name": "Shadow",
+      "preview": "🖤",
+      "price": 90
+    },
+    {
+      "id": "border_circuit",
+      "category": "borders",
+      "name": "Circuit",
+      "preview": "▣",
+      "price": 110
+    },
+    {
+      "id": "border_plasma",
+      "category": "borders",
+      "name": "Plasma",
+      "preview": "◇",
+      "price": 140
+    },
+    {
+      "id": "border_gold",
+      "category": "borders",
+      "name": "Gold",
+      "preview": "◎",
+      "price": 180
+    },
+    {
+      "id": "sound_classic",
+      "category": "sound_packs",
+      "name": "Classic",
+      "preview": "♪",
+      "price": 75
+    },
+    {
+      "id": "sound_arcade",
+      "category": "sound_packs",
+      "name": "Arcade",
+      "preview": "♫",
+      "price": 120
+    },
+    {
+      "id": "sound_zen",
+      "category": "sound_packs",
+      "name": "Zen",
+      "preview": "♩",
+      "price": 90
+    },
+    {
+      "id": "title_risk_manager",
+      "category": "titles",
+      "name": "Risk Manager",
+      "preview": "RM",
+      "price": 80
+    },
+    {
+      "id": "title_dip_hunter",
+      "category": "titles",
+      "name": "Dip Hunter",
+      "preview": "DH",
+      "price": 100
+    },
+    {
+      "id": "title_sol_sentinel",
+      "category": "titles",
+      "name": "SOL Sentinel",
+      "preview": "SS",
+      "price": 140
+    },
+    {
+      "id": "title_process_maxi",
+      "category": "titles",
+      "name": "Process Maxi",
+      "preview": "PM",
+      "price": 160
+    },
+    {
+      "id": "title_gigachad",
+      "category": "titles",
+      "name": "GIGACHAD",
+      "preview": "GG",
+      "price": 250
+    }
   ]
 }
