@@ -48,8 +48,8 @@ jobs:
         run: |
           VERSION=${{ steps.pkg.outputs.version }}
           gh release create "v${VERSION}" \
-            "dist/SOL HUD Setup ${VERSION}.exe" \
-            "dist/SOL HUD Setup ${VERSION}.exe.blockmap" \
+            "dist/SOL-HUD-Setup-${VERSION}.exe" \
+            "dist/SOL-HUD-Setup-${VERSION}.exe.blockmap" \
             "dist/latest.yml" \
             --title "v${VERSION}" \
             --generate-notes

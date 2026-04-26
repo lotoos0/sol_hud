@@ -26,5 +26,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   onWindowPositionChanged: (callback) => {
     ipcRenderer.on('window-position-changed', (_event, pos) => callback(pos));
+  },
+  onUpdaterStatus: (callback) => {
+    ipcRenderer.on('updater-status', (_event, data) => callback(data));
   }
 });

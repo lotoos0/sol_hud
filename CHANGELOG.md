@@ -31,6 +31,21 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [0.13.0] - 2026-04-26
+
+### Added
+
+- Added the Electron auto-updater runtime dependency, main-process import, GitHub publish metadata, and packaged app icon configuration.
+
+### Fixed
+
+- Aligned Electron Builder release metadata with the hyphenated installer artifact name used by the Release workflow.
+- Moved packaged app session/player state writes to Electron `userData` and kept quest definitions read-only in the bundled app.
+- Included cosmetics in quest definition IPC data so the Trader Vault can render shop items.
+- Updated visible application version labels to `0.13.0`.
+
+---
+
 ## [0.12.4] - 2026-04-26
 
 ### Fixed
@@ -266,7 +281,8 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ---
 
-[Unreleased]: https://github.com/lotoos0/sol_hud/compare/v0.12.4...HEAD
+[Unreleased]: https://github.com/lotoos0/sol_hud/compare/v0.13.0...HEAD
+[0.13.0]: https://github.com/lotoos0/sol_hud/compare/v0.12.4...v0.13.0
 [0.12.4]: https://github.com/lotoos0/sol_hud/compare/v0.12.3...v0.12.4
 [0.12.3]: https://github.com/lotoos0/sol_hud/compare/v0.12.2...v0.12.3
 [0.12.2]: https://github.com/lotoos0/sol_hud/compare/v0.12.1...v0.12.2
