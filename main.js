@@ -1,4 +1,5 @@
 const { app, BrowserWindow, globalShortcut, ipcMain, screen, shell } = require('electron');
+const { autoUpdater } = require('electron-updater');
 const fs = require('fs');
 const path = require('path');
 const playerStore = require('./storage/playerStore');
@@ -6,16 +7,26 @@ const questStore = require('./storage/questStore');
 
 let win;
 let updaterWin;
-const sessionsDir = path.join(__dirname, 'sessions');
-const positionFile = path.join(sessionsDir, '_window.json');
+
+function getDataDir() {
+  return app.isPackaged ? app.getPath('userData') : __dirname;
+}
+
+function getSessionsDir() {
+  return path.join(getDataDir(), 'sessions');
+}
+
+function getPositionFile() {
+  return path.join(getSessionsDir(), '_window.json');
+}
 
 function ensureSessionsDir() {
-  fs.mkdirSync(sessionsDir, { recursive: true });
+  fs.mkdirSync(getSessionsDir(), { recursive: true });
 }
 
 function loadWindowPosition() {
   try {
-    return JSON.parse(fs.readFileSync(positionFile));
+    return JSON.parse(fs.readFileSync(getPositionFile()));
   } catch {
     return { x: 10, y: 10 };
   }
@@ -23,7 +34,7 @@ function loadWindowPosition() {
 
 function saveWindowPosition(pos) {
   ensureSessionsDir();
-  fs.writeFileSync(positionFile, JSON.stringify(pos));
+  fs.writeFileSync(getPositionFile(), JSON.stringify(pos));
 }
 
 function createUpdaterWindow() {
@@ -50,6 +61,17 @@ function createUpdaterWindow() {
   updaterWin.loadFile('updater.html');
 }
 
+function startMainWindow() {
+  if (updaterWin) {
+    updaterWin.close();
+    updaterWin = null;
+  }
+
+  if (!win || win.isDestroyed()) {
+    createWindow();
+  }
+}
+
 function setupAutoUpdater() {
   autoUpdater.autoDownload = true;
 
@@ -59,11 +81,7 @@ function setupAutoUpdater() {
 
   autoUpdater.on('update-not-available', () => {
     updaterWin?.webContents.send('updater-status', { state: 'no-update' });
-    setTimeout(() => {
-      updaterWin?.close();
-      updaterWin = null;
-      createWindow();
-    }, 800);
+    setTimeout(startMainWindow, 800);
   });
 
   autoUpdater.on('download-progress', (progress) => {
@@ -80,17 +98,11 @@ function setupAutoUpdater() {
 
   autoUpdater.on('error', () => {
     updaterWin?.webContents.send('updater-status', { state: 'error' });
-    setTimeout(() => {
-      updaterWin?.close();
-      updaterWin = null;
-      createWindow();
-    }, 600);
+    setTimeout(startMainWindow, 600);
   });
 
   autoUpdater.checkForUpdates().catch(() => {
-    updaterWin?.close();
-    updaterWin = null;
-    createWindow();
+    startMainWindow();
   });
 }
 
@@ -136,6 +148,9 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  playerStore.init(getDataDir());
+  questStore.init(getDataDir());
+
   ipcMain.handle('resize-window', (_event, h) => {
     if (win) {
       win.setSize(280, h);
@@ -144,7 +159,7 @@ app.whenReady().then(() => {
 
   ipcMain.handle('save-session', (_event, data) => {
     ensureSessionsDir();
-    const file = path.join(sessionsDir, `${data.session_id}.json`);
+    const file = path.join(getSessionsDir(), `${data.session_id}.json`);
     fs.writeFileSync(file, JSON.stringify(data, null, 2));
 
     return { ok: true, path: file };
@@ -185,14 +200,14 @@ app.whenReady().then(() => {
   });
 
   ipcMain.handle('get-sessions-dir', () => {
-    return sessionsDir;
+    return getSessionsDir();
   });
 
   ipcMain.handle('get-session-ids', () => {
     ensureSessionsDir();
 
     return fs
-      .readdirSync(sessionsDir)
+      .readdirSync(getSessionsDir())
       .filter((file) => file.endsWith('.json') && file !== '_window.json')
       .map((file) => path.basename(file, '.json'));
   });
@@ -200,7 +215,7 @@ app.whenReady().then(() => {
   ipcMain.handle('open-sessions-folder', () => {
     ensureSessionsDir();
 
-    return shell.openPath(sessionsDir);
+    return shell.openPath(getSessionsDir());
   });
 
   ipcMain.handle('get-screen-size', () => {

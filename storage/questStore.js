@@ -1,8 +1,12 @@
 const fs = require('fs');
 const path = require('path');
 
-const questsStateFile = path.join(__dirname, '..', 'sessions', 'quests_state.json');
+let questsStateFile = path.join(__dirname, '..', 'sessions', 'quests_state.json');
 const questDefsFile = path.join(__dirname, '..', 'data', 'quests_definitions.json');
+
+function init(dataDir) {
+  questsStateFile = path.join(dataDir, 'sessions', 'quests_state.json');
+}
 
 function getNow() {
   return new Date().toISOString();
@@ -81,11 +85,13 @@ function loadQuestDefs() {
     mainline: defs.mainline,
     side_quests: defs.side_quests,
     boss_fights: defs.boss_fights,
-    achievements: defs.achievements
+    achievements: defs.achievements,
+    cosmetics: defs.cosmetics || []
   };
 }
 
 module.exports = {
+  init,
   getDefaultQuestsState,
   loadQuestsState,
   saveQuestsState,

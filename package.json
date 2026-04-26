@@ -1,12 +1,15 @@
 {
   "name": "sol-hud",
-  "version": "0.12.4",
+  "version": "0.13.0",
   "main": "main.js",
   "scripts": {
     "check": "node --check main.js && node --check preload.js && node --check renderer.js && node --check storage/playerStore.js && node --check storage/questStore.js",
     "test": "npm run check",
     "start": "electron .",
     "build": "electron-builder --win --publish never"
+  },
+  "dependencies": {
+    "electron-updater": "^6.3.0"
   },
   "devDependencies": {
     "electron": "^28.0.0",
@@ -18,6 +21,7 @@
     "directories": {
       "output": "dist"
     },
+    "artifactName": "SOL-HUD-Setup-${version}.${ext}",
     "files": [
       "**/*",
       "!sessions/**",
@@ -34,7 +38,12 @@
           ]
         }
       ],
-      "artifactName": "SOL HUD Setup ${version}.${ext}"
+      "artifactName": "SOL-HUD-Setup-${version}.${ext}"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "lotoos0",
+      "repo": "sol_hud"
     },
     "nsis": {
       "oneClick": true,

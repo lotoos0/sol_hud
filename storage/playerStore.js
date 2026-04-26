@@ -1,7 +1,11 @@
 const fs = require('fs');
 const path = require('path');
 
-const playerFile = path.join(__dirname, '..', 'sessions', 'player.json');
+let playerFile = path.join(__dirname, '..', 'sessions', 'player.json');
+
+function init(dataDir) {
+  playerFile = path.join(dataDir, 'sessions', 'player.json');
+}
 
 function getNow() {
   return new Date().toISOString();
@@ -74,6 +78,7 @@ function loadPlayer() {
 }
 
 module.exports = {
+  init,
   getDefaultPlayer,
   loadPlayer,
   savePlayer
