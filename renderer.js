@@ -22,7 +22,9 @@ const COIN_TABLE = {
   session_no_tilt: 15,
   session_with_review: 8
 };
-const HEART_FULL = '\u2764\uFE0F';
+const BENCHMARK_WIN_RATE = 68.75;
+const DEFAULT_HEART_FULL = '\u2764\uFE0F';
+let HEART_FULL = DEFAULT_HEART_FULL;
 const HEART_EMPTY = '\uD83D\uDDA4';
 
 function createDefaultSession() {
@@ -43,6 +45,7 @@ function createDefaultSession() {
     recentResults: [],
     tilt_events: [],
     activeBossFight: null,
+    bossDefeated: false,
     checklist: {
       chart: false,
       narrative: false,
@@ -65,6 +68,8 @@ let tiltCooldownUntil = 0;
 let playerData = null;
 let questDefs = null;
 let questsState = null;
+let opacitySaveTimer = null;
+let activeVaultCategory = 'heart_skins';
 
 const startScreen = document.getElementById('start-screen');
 const livesInput = document.getElementById('cfg-lives');
@@ -75,14 +80,20 @@ const miniBar = document.getElementById('mini-bar');
 const expandedPanel = document.getElementById('expanded-panel');
 const expandButton = document.getElementById('btn-expand');
 const collapseButton = document.getElementById('btn-collapse');
+const settingsButton = document.getElementById('btn-settings');
+const settingsPanel = document.getElementById('settings-panel');
+const opacitySlider = document.getElementById('opacity-slider');
+const opacityValue = document.getElementById('opacity-value');
+const vaultButton = document.getElementById('btn-vault');
+const vaultPanel = document.getElementById('vault-panel');
+const vaultCloseButton = document.getElementById('btn-vault-close');
+const vaultTabs = document.getElementById('vault-tabs');
+const vaultGrid = document.getElementById('vault-grid');
 const entryButton = document.getElementById('btn-entry');
 const passButton = document.getElementById('btn-pass');
 const slButton = document.getElementById('btn-sl');
 const endSessionButton = document.getElementById('btn-end-session');
 const summaryScreen = document.getElementById('summary-screen');
-const summaryStats = document.getElementById('summary-stats');
-const endExportButton = document.getElementById('btn-end-export');
-const endOnlyButton = document.getElementById('btn-end-only');
 const pnlInput = document.getElementById('pnl-input');
 const pnlDisplay = document.getElementById('pnl-display');
 const statsMini = document.querySelector('.stats-mini');
@@ -228,6 +239,42 @@ function showTimedElement(element, className) {
   }, 3000);
 }
 
+function clampOpacity(value) {
+  const numericValue = Number(value);
+
+  if (!Number.isFinite(numericValue)) {
+    return 100;
+  }
+
+  return Math.min(100, Math.max(25, Math.round(numericValue)));
+}
+
+function applyOpacity(value) {
+  const clampedValue = clampOpacity(value);
+  document.documentElement.style.setProperty('--hud-opacity', String(clampedValue / 100));
+
+  if (opacitySlider) {
+    opacitySlider.value = String(clampedValue);
+  }
+
+  if (opacityValue) {
+    opacityValue.textContent = `${clampedValue}%`;
+  }
+}
+
+function scheduleOpacitySave(value) {
+  clearTimeout(opacitySaveTimer);
+
+  opacitySaveTimer = setTimeout(async () => {
+    if (!playerData) {
+      return;
+    }
+
+    playerData.hud_opacity = clampOpacity(value);
+    await window.electronAPI.savePlayer(playerData);
+  }, 300);
+}
+
 function ensurePlayerShape(player) {
   const rank = getRankFromXP(Number(player.xp) || 0);
   const streakValue =
@@ -253,6 +300,19 @@ function ensurePlayerShape(player) {
   player.last_session_date = player.last_session_date || null;
   player.rusty = Boolean(player.rusty);
   player.consecutive_days_off = Number(player.consecutive_days_off) || 0;
+  player.hud_opacity = clampOpacity(player.hud_opacity || 100);
+  player.unlocked_heart_skins = Array.isArray(player.unlocked_heart_skins)
+    ? player.unlocked_heart_skins
+    : [];
+  player.unlocked_borders = Array.isArray(player.unlocked_borders) ? player.unlocked_borders : [];
+  player.unlocked_sound_packs = Array.isArray(player.unlocked_sound_packs)
+    ? player.unlocked_sound_packs
+    : [];
+  player.unlocked_titles = Array.isArray(player.unlocked_titles) ? player.unlocked_titles : [];
+  player.active_heart_skins = player.active_heart_skins || null;
+  player.active_borders = player.active_borders || null;
+  player.active_sound_packs = player.active_sound_packs || null;
+  player.active_titles = player.active_titles || null;
   player.stats = {
     ...(player.stats || {}),
     sessions: player.total_sessions,
@@ -318,7 +378,12 @@ async function checkDailyBonus() {
 
 async function applySessionRewards() {
   if (session.rewardsApplied || !playerData) {
-    return;
+    return {
+      xpEarned: 0,
+      coinsEarned: 0,
+      questsCompleted: [],
+      bossStatus: session.bossDefeated ? 'defeated' : 'none'
+    };
   }
 
   session.rewardsApplied = true;
@@ -386,6 +451,13 @@ async function applySessionRewards() {
   }
 
   await window.electronAPI.savePlayer(playerData);
+
+  return {
+    xpEarned: earnedXP,
+    coinsEarned: earnedCoins,
+    questsCompleted: [],
+    bossStatus: session.bossDefeated ? 'defeated' : 'none'
+  };
 }
 
 function ensureQuestStateShape(state) {
@@ -395,6 +467,130 @@ function ensureQuestStateShape(state) {
   };
 
   return state;
+}
+
+function getCosmetics() {
+  return Array.isArray(questDefs?.cosmetics) ? questDefs.cosmetics : [];
+}
+
+function getCosmeticItem(itemId) {
+  return getCosmetics().find((item) => item.id === itemId) || null;
+}
+
+function getUnlockedKey(category) {
+  return `unlocked_${category}`;
+}
+
+function getActiveKey(category) {
+  return `active_${category}`;
+}
+
+function isCosmeticUnlocked(item) {
+  return (playerData?.[getUnlockedKey(item.category)] || []).includes(item.id);
+}
+
+function applyCosmetics() {
+  if (!playerData || !hudContainer) {
+    return;
+  }
+
+  const activeHeart = getCosmeticItem(playerData.active_heart_skins);
+  HEART_FULL = activeHeart?.preview || DEFAULT_HEART_FULL;
+
+  hudContainer.classList.forEach((className) => {
+    if (className.startsWith('cosmetic-border-')) {
+      hudContainer.classList.remove(className);
+    }
+  });
+
+  if (playerData.active_borders) {
+    hudContainer.classList.add(`cosmetic-border-${playerData.active_borders}`);
+  }
+
+  renderHearts();
+}
+
+function renderVault(category = activeVaultCategory) {
+  if (!vaultGrid || !vaultTabs || !playerData) {
+    return;
+  }
+
+  activeVaultCategory = category;
+  vaultTabs.querySelectorAll('button').forEach((button) => {
+    button.classList.toggle('is-active', button.dataset.category === activeVaultCategory);
+  });
+
+  const items = getCosmetics().filter((item) => item.category === activeVaultCategory);
+
+  vaultGrid.innerHTML = items
+    .map((item) => {
+      const unlocked = isCosmeticUnlocked(item);
+      const active = playerData[getActiveKey(item.category)] === item.id;
+      const status = active ? 'ACTIVE' : unlocked ? 'OWNED' : `LOCKED - ${item.price} coins`;
+      const actionLabel = active ? 'Active' : unlocked ? 'Equip' : 'Buy';
+      const action = unlocked ? 'equip' : 'purchase';
+      const disabled = active ? ' disabled' : '';
+
+      return `
+        <div class="vault-item ${unlocked ? 'is-owned' : 'is-locked'} ${active ? 'is-active' : ''}">
+          <div class="vault-preview">${item.preview || ''}</div>
+          <div class="vault-name">${item.name}</div>
+          <div class="vault-status">${status}</div>
+          <button type="button" data-action="${action}" data-id="${item.id}"${disabled}>${actionLabel}</button>
+        </div>
+      `;
+    })
+    .join('');
+}
+
+async function onPurchaseItem(itemId) {
+  const item = getCosmeticItem(itemId);
+
+  if (!item || !playerData || isCosmeticUnlocked(item) || playerData.coins < item.price) {
+    renderVault();
+    return;
+  }
+
+  const unlockedKey = getUnlockedKey(item.category);
+  playerData.coins -= item.price;
+  playerData[unlockedKey] = [...(playerData[unlockedKey] || []), item.id];
+  await window.electronAPI.savePlayer(playerData);
+  renderVault(item.category);
+}
+
+async function onEquipItem(itemId) {
+  const item = getCosmeticItem(itemId);
+
+  if (!item || !playerData || !isCosmeticUnlocked(item)) {
+    renderVault();
+    return;
+  }
+
+  playerData[getActiveKey(item.category)] = item.id;
+  applyCosmetics();
+  await window.electronAPI.savePlayer(playerData);
+  renderVault(item.category);
+}
+
+function setVaultVisible(visible) {
+  if (!vaultPanel) {
+    return;
+  }
+
+  vaultPanel.hidden = !visible;
+  hudContainer.classList.toggle('is-vault', visible);
+
+  if (visible) {
+    renderVault();
+    hudContainer.hidden = false;
+    session.expanded = false;
+    expandedPanel.hidden = true;
+    miniBar.hidden = false;
+    hudContainer.classList.remove('is-expanded', 'is-summary');
+    window.electronAPI.resizeWindow(500);
+  } else {
+    window.electronAPI.resizeWindow(session.startedAt ? 44 : 180);
+  }
 }
 
 function getHotColdState() {
@@ -662,6 +858,7 @@ async function onBossDefeated() {
   playerData.xp += Number(boss.xp) || 0;
   playerData.coins += Number(boss.coins) || 0;
   syncPlayerRank();
+  session.bossDefeated = true;
   session.activeBossFight = null;
   questsState.boss_fight.active = null;
 
@@ -748,6 +945,130 @@ function buildSessionJSON() {
     active_boss_fight: session.activeBossFight ? session.activeBossFight.id : null,
     window_position: currentPosition()
   };
+}
+
+function getCompletedQuestIds(category) {
+  const value = questsState?.[category];
+
+  if (Array.isArray(value?.completed)) {
+    return value.completed;
+  }
+
+  if (Array.isArray(value)) {
+    return value;
+  }
+
+  return [];
+}
+
+function getQuestMetricValue(metric) {
+  const metrics = {
+    sessions_started: playerData?.total_sessions || 0,
+    sessions_completed: playerData?.total_sessions || 0,
+    sessions_saved: playerData?.total_sessions || 0,
+    attempts: playerData?.total_attempts || 0,
+    wins: playerData?.total_wins || 0,
+    passes: session.trades.filter((trade) => trade.type === 'PASS').length,
+    sl_hits: playerData?.total_sl_hits || 0,
+    passive_events: playerData?.total_passive_events || 0,
+    pnl_sol: playerData?.total_pnl_sol || 0,
+    qualified_entries: session.trades.filter(
+      (trade) => trade.type === 'ENTRY' && Number(trade.checked_count) >= 3
+    ).length,
+    entries_with_three_checks: session.trades.filter(
+      (trade) => trade.type === 'ENTRY' && Number(trade.checked_count) === 3
+    ).length,
+    entries_with_four_checks: session.trades.filter(
+      (trade) => trade.type === 'ENTRY' && Number(trade.checked_count) >= 4
+    ).length,
+    sessions_without_passive_alerts: session.passiveEvents === 0 ? 1 : 0,
+    sessions_within_sol_limit:
+      Math.abs(session.pnl_sol) <= Number(session.config.sol_limit || 0) ? 1 : 0,
+    locked_sessions: session.locked ? 1 : 0,
+    contained_red_sessions: getBossMetric('contained_red_sessions'),
+    disciplined_session_streak: playerData?.streak || 0
+  };
+
+  return metrics[metric] ?? 0;
+}
+
+function getQuestProgressRows() {
+  const groups = [
+    { key: 'mainline', items: questDefs?.mainline || [] },
+    { key: 'side_quests', items: questDefs?.side_quests || [] }
+  ];
+  const rows = [];
+
+  groups.forEach((group) => {
+    const completed = getCompletedQuestIds(group.key);
+
+    group.items.slice(0, 3).forEach((quest) => {
+      const target = Number(quest.condition?.value) || 1;
+      const current = Math.min(target, getQuestMetricValue(quest.condition?.metric));
+      const isComplete = completed.includes(quest.id) || current >= target;
+
+      rows.push({
+        name: quest.name,
+        status: isComplete ? 'COMPLETED' : `IN PROGRESS ${current}/${target}`,
+        complete: isComplete
+      });
+    });
+  });
+
+  return rows.slice(0, 5);
+}
+
+function buildRecapHTML({ xpEarned, coinsEarned, questsCompleted, bossStatus }) {
+  const winRate = session.attempts === 0 ? 0 : (session.wins / session.attempts) * 100;
+  const benchmarkClass = winRate >= BENCHMARK_WIN_RATE ? 'recap-good' : 'recap-bad';
+  const questRows = getQuestProgressRows();
+  const questList =
+    questRows.length > 0
+      ? questRows
+          .map((quest) => {
+            const marker = quest.complete ? '&#10003;' : '-';
+            return `<li class="${quest.complete ? 'is-complete' : ''}"><span>${marker} ${quest.name}</span><strong>${quest.status}</strong></li>`;
+          })
+          .join('')
+      : '<li><span>- Quests</span><strong>IN PROGRESS 0/1</strong></li>';
+  const bossCopy = bossStatus === 'defeated' ? '&#9876; DEFEATED' : '- no boss';
+  const completedCopy =
+    questsCompleted.length > 0 ? `${questsCompleted.length} completed` : 'tracking active';
+
+  return `
+    <h3>Daily Recap</h3>
+    <div class="recap-grid">
+      <div><span>Session ID</span><strong>${session.id}</strong></div>
+      <div><span>Win Rate</span><strong class="${benchmarkClass}">${winRate.toFixed(1)}%</strong><small>Benchmark ${BENCHMARK_WIN_RATE}%</small></div>
+      <div><span>XP</span><strong class="recap-good">+${xpEarned}</strong></div>
+      <div><span>Coins</span><strong class="recap-good">+${coinsEarned}</strong></div>
+      <div><span>Streak</span><strong>${playerData?.streak || 0}</strong></div>
+      <div><span>Boss</span><strong>${bossCopy}</strong></div>
+    </div>
+    <div class="quest-recap">
+      <div class="recap-subtitle">Quest Progress <span>${completedCopy}</span></div>
+      <ul>${questList}</ul>
+    </div>
+    <div class="summary-actions">
+      <button id="btn-share" type="button">Share</button>
+      <button id="btn-new-session" type="button">New Session</button>
+    </div>
+  `;
+}
+
+function bindRecapActions() {
+  const shareButton = document.getElementById('btn-share');
+  const newSessionButton = document.getElementById('btn-new-session');
+
+  if (shareButton) {
+    shareButton.addEventListener('click', () => {
+      showToast('SHARE READY IN TASK #6');
+    });
+  }
+
+  if (newSessionButton) {
+    newSessionButton.addEventListener('click', resetToStartScreen);
+  }
 }
 
 async function autoSave() {
@@ -973,6 +1294,7 @@ expandButton.addEventListener('click', () => {
     return;
   }
 
+  setVaultVisible(false);
   session.expanded = true;
   hudContainer.classList.add('is-expanded');
   expandedPanel.hidden = false;
@@ -987,11 +1309,66 @@ collapseButton.addEventListener('click', () => {
   }
 
   session.expanded = false;
+  settingsPanel.hidden = true;
   hudContainer.classList.remove('is-expanded');
   expandedPanel.hidden = true;
   miniBar.hidden = false;
   window.electronAPI.resizeWindow(44);
   window.electronAPI.setIgnoreMouse(false);
+});
+
+settingsButton.addEventListener('click', () => {
+  if (!session.startedAt) {
+    return;
+  }
+
+  setVaultVisible(false);
+  settingsPanel.hidden = !settingsPanel.hidden;
+  session.expanded = true;
+  hudContainer.classList.add('is-expanded');
+  expandedPanel.hidden = false;
+  miniBar.hidden = true;
+  window.electronAPI.resizeWindow(settingsPanel.hidden ? 460 : 500);
+});
+
+opacitySlider.addEventListener('input', () => {
+  const value = clampOpacity(opacitySlider.value);
+  applyOpacity(value);
+  scheduleOpacitySave(value);
+});
+
+vaultButton.addEventListener('click', () => {
+  if (!playerData) {
+    return;
+  }
+
+  setVaultVisible(vaultPanel.hidden);
+});
+
+vaultCloseButton.addEventListener('click', () => {
+  setVaultVisible(false);
+});
+
+vaultTabs.addEventListener('click', (event) => {
+  const button = event.target.closest('button[data-category]');
+
+  if (button) {
+    renderVault(button.dataset.category);
+  }
+});
+
+vaultGrid.addEventListener('click', async (event) => {
+  const button = event.target.closest('button[data-action]');
+
+  if (!button) {
+    return;
+  }
+
+  if (button.dataset.action === 'purchase') {
+    await onPurchaseItem(button.dataset.id);
+  } else {
+    await onEquipItem(button.dataset.id);
+  }
 });
 
 checklistInputs.forEach((input, index) => {
@@ -1007,13 +1384,6 @@ passButton.addEventListener('click', onPass);
 slButton.addEventListener('click', onSL);
 
 endSessionButton.addEventListener('click', showSummary);
-
-endExportButton.addEventListener('click', async () => {
-  await window.electronAPI.openSessionsFolder();
-  resetToStartScreen();
-});
-
-endOnlyButton.addEventListener('click', resetToStartScreen);
 
 startButton.addEventListener('click', async () => {
   const { valid } = validateStartInputs();
@@ -1060,6 +1430,9 @@ async function initSession(config) {
 
   sessionOver.hidden = true;
   summaryScreen.hidden = true;
+  summaryScreen.innerHTML = '';
+  settingsPanel.hidden = true;
+  vaultPanel.hidden = true;
   comebackBanner.hidden = !session.isComeback;
   bossFightBanner.hidden = true;
   bossDefeatedToast.hidden = true;
@@ -1069,6 +1442,7 @@ async function initSession(config) {
     'is-expanded',
     'is-locked',
     'is-summary',
+    'is-vault',
     'passive-alert',
     'hot-border',
     'cold-border',
@@ -1105,28 +1479,22 @@ async function showSummary() {
   stopSessionTimer();
   renderAll();
   await autoSave();
-
-  const winRate =
-    session.attempts === 0 ? '0.0' : ((session.wins / session.attempts) * 100).toFixed(1);
-
-  summaryStats.innerHTML = `
-    <p>Attempts: ${session.attempts} | Wins: ${session.wins} | Losses: ${session.losses}</p>
-    <p>Win Rate: ${winRate}% | SL Hits: ${session.slHits}</p>
-    <p>Passive Events: ${session.passiveEvents}</p>
-    <p>Session File: sessions/${session.id}.json</p>
-  `;
+  const sessionRewards = await applySessionRewards();
+  summaryScreen.innerHTML = buildRecapHTML(sessionRewards);
+  bindRecapActions();
 
   summaryScreen.hidden = false;
   sessionOver.hidden = true;
   bossFightBanner.hidden = true;
+  settingsPanel.hidden = true;
+  setVaultVisible(false);
   endSessionButton.hidden = true;
   session.expanded = true;
   hudContainer.classList.add('is-expanded', 'is-summary');
   hudContainer.classList.remove('is-locked');
   expandedPanel.hidden = false;
   miniBar.hidden = true;
-  window.electronAPI.resizeWindow(460);
-  await applySessionRewards();
+  window.electronAPI.resizeWindow(500);
 }
 
 function resetToStartScreen() {
@@ -1134,10 +1502,13 @@ function resetToStartScreen() {
   Object.assign(session, createDefaultSession(), { windowPos });
   clearTimeout(passiveTimer);
   stopSessionTimer();
+  clearTimeout(opacitySaveTimer);
   summaryScreen.hidden = true;
   sessionOver.hidden = true;
   comebackBanner.hidden = true;
   bossFightBanner.hidden = true;
+  settingsPanel.hidden = true;
+  vaultPanel.hidden = true;
   bossDefeatedToast.hidden = true;
   tiltAlert.hidden = true;
   endSessionButton.hidden = false;
@@ -1146,6 +1517,7 @@ function resetToStartScreen() {
     'is-expanded',
     'is-locked',
     'is-summary',
+    'is-vault',
     'passive-alert',
     'hot-border',
     'cold-border',
@@ -1177,9 +1549,13 @@ async function init() {
   playerData = ensurePlayerShape(await window.electronAPI.loadPlayer());
   questDefs = await window.electronAPI.loadQuestDefs();
   questsState = ensureQuestStateShape(await window.electronAPI.loadQuestsState());
+  applyOpacity(playerData.hud_opacity);
+  applyCosmetics();
   await checkDailyBonus();
 
   hudContainer.hidden = true;
+  vaultPanel.hidden = true;
+  settingsPanel.hidden = true;
   comebackBanner.hidden = true;
   bossFightBanner.hidden = true;
   bossDefeatedToast.hidden = true;

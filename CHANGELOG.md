@@ -31,6 +31,20 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [0.12.0] - 2026-04-26
+
+### Added
+
+- Added HUD opacity settings with live preview and debounced player-state persistence.
+- Added a daily recap summary with session rewards, benchmark comparison, quest progress, boss status, sharing placeholder, and new-session action.
+- Added Trader Vault cosmetics data and UI for buying and equipping heart skins, borders, sound packs, and titles.
+
+### Changed
+
+- Updated visible application version labels to `0.12.0`.
+
+---
+
 ## [0.11.0] - 2026-04-25
 
 ### Added
@@ -214,7 +228,8 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ---
 
-[Unreleased]: https://github.com/lotoos0/sol_hud/compare/v0.11.0...HEAD
+[Unreleased]: https://github.com/lotoos0/sol_hud/compare/v0.12.0...HEAD
+[0.12.0]: https://github.com/lotoos0/sol_hud/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/lotoos0/sol_hud/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/lotoos0/sol_hud/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/lotoos0/sol_hud/compare/v0.8.0...v0.9.0
