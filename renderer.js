@@ -33,6 +33,8 @@ const VAULT_WINDOW_HEIGHT = 500;
 const DEFAULT_LIVES_SLOT_WIDTH = 72;
 const HEART_SLOT_WIDTH = 21;
 const LIVES_SLOT_PADDING = 14;
+const MINI_BAR_SAFETY_WIDTH = 36;
+const STREAK_SLOT_WIDTH = 26;
 const DEFAULT_HEART_FULL = '\u2764\uFE0F';
 let HEART_FULL = DEFAULT_HEART_FULL;
 const HEART_EMPTY = '\uD83D\uDDA4';
@@ -290,7 +292,10 @@ function getLivesSlotWidth() {
 }
 
 function getResponsiveWindowWidth() {
-  return DEFAULT_WINDOW_WIDTH + Math.max(0, getLivesSlotWidth() - DEFAULT_LIVES_SLOT_WIDTH);
+  const livesOverflow = Math.max(0, getLivesSlotWidth() - DEFAULT_LIVES_SLOT_WIDTH);
+  const streakWidth = playerData && playerData.rank_level >= 3 ? STREAK_SLOT_WIDTH : 0;
+
+  return DEFAULT_WINDOW_WIDTH + livesOverflow + streakWidth + MINI_BAR_SAFETY_WIDTH;
 }
 
 function applyResponsiveLayout() {
