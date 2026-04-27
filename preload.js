@@ -11,6 +11,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   loadQuestsState: () => ipcRenderer.invoke('load-quests-state'),
   saveQuestsState: (data) => ipcRenderer.invoke('save-quests-state', data),
   loadQuestDefs: () => ipcRenderer.invoke('load-quest-defs'),
+  loadHeatmapData: () => ipcRenderer.invoke('load-heatmap-data'),
   loadLastPosition: () => ipcRenderer.invoke('load-position'),
   savePosition: (pos) => ipcRenderer.invoke('save-position', pos),
   getSessionsDir: () => ipcRenderer.invoke('get-sessions-dir'),

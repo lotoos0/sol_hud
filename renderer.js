@@ -1,5 +1,5 @@
 const PASSIVE_TIMEOUT = 5 * 60 * 1000;
-const APP_VERSION = '0.14.0';
+const APP_VERSION = '0.15.0';
 const RANK_TABLE = [
   { rank: 'Rookie', rank_level: 1, xp_required: 0, feature_unlock: 'basic_hud' },
   { rank: 'Scout', rank_level: 2, xp_required: 100, feature_unlock: 'session_history' },
@@ -102,6 +102,8 @@ const vaultPanel = document.getElementById('vault-panel');
 const vaultCloseButton = document.getElementById('btn-vault-close');
 const vaultTabs = document.getElementById('vault-tabs');
 const vaultGrid = document.getElementById('vault-grid');
+const heatmapButton = document.getElementById('btn-heatmap');
+const heatmapPanel = document.getElementById('heatmap-panel');
 const entryButton = document.getElementById('btn-entry');
 const passButton = document.getElementById('btn-pass');
 const slButton = document.getElementById('btn-sl');
@@ -148,6 +150,16 @@ function hasRankLevel(minLevel) {
 
 function isGigachadRank() {
   return playerData && (String(playerData.rank).toUpperCase() === 'GIGACHAD' || playerData.rank_level >= 7);
+}
+
+function hasHeatmapRank() {
+  if (!playerData) {
+    return false;
+  }
+
+  const rankName = String(playerData.rank || '').toUpperCase();
+
+  return rankName.includes('CHAD') || Number(playerData.rank_level) >= 6;
 }
 
 function getCheckedCount() {
@@ -630,6 +642,7 @@ function setVaultVisible(visible) {
   hudContainer.classList.toggle('is-vault', visible);
 
   if (visible) {
+    heatmapPanel.hidden = true;
     renderVault();
     hudContainer.hidden = false;
     session.expanded = false;
@@ -688,6 +701,60 @@ function renderStreak() {
   } else {
     streakDisplay.textContent = '—';
   }
+}
+
+function renderHeatmapButton() {
+  if (!heatmapButton) {
+    return;
+  }
+
+  const unlocked = hasHeatmapRank();
+  heatmapButton.hidden = !unlocked;
+
+  if (!unlocked && heatmapPanel) {
+    heatmapPanel.hidden = true;
+  }
+}
+
+function interpolateHeatmapColor(winRate) {
+  const red = [255, 51, 102];
+  const green = [0, 255, 136];
+  const ratio = Math.max(0, Math.min(1, Number(winRate) / 100));
+  const color = red.map((channel, index) => {
+    return Math.round(channel + (green[index] - channel) * ratio);
+  });
+
+  return `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
+}
+
+function renderHeatmap(data) {
+  if (!heatmapPanel) {
+    return;
+  }
+
+  const buckets = Array.isArray(data) ? data : [];
+  const maxTrades = Math.max(1, ...buckets.map((bucket) => Number(bucket.trades) || 0));
+
+  heatmapPanel.innerHTML = '';
+
+  Array.from({ length: 24 }, (_item, hour) => {
+    const bucket = buckets.find((item) => Number(item.hour) === hour) || {
+      hour,
+      trades: 0,
+      wins: 0,
+      win_rate: 0
+    };
+    const trades = Number(bucket.trades) || 0;
+    const winRate = Number(bucket.win_rate) || 0;
+    const cell = document.createElement('div');
+
+    cell.className = 'heatmap-cell';
+    cell.textContent = `${hour}h`;
+    cell.style.backgroundColor = interpolateHeatmapColor(winRate);
+    cell.style.opacity = String(trades === 0 ? 0.18 : Math.min(1, 0.3 + (trades / maxTrades) * 0.7));
+    cell.dataset.tooltip = `${trades} trades, ${winRate.toFixed(1)}% WR`;
+    heatmapPanel.appendChild(cell);
+  });
 }
 
 function updateRecentResults(result) {
@@ -1428,6 +1495,7 @@ function renderAll() {
   renderChecklist();
   renderHotCold();
   renderStreak();
+  renderHeatmapButton();
 
   if (session.locked) {
     lockSession();
@@ -1512,6 +1580,7 @@ collapseButton.addEventListener('click', () => {
 
   session.expanded = false;
   settingsPanel.hidden = true;
+  heatmapPanel.hidden = true;
   hudContainer.classList.remove('is-expanded');
   expandedPanel.hidden = true;
   miniBar.hidden = false;
@@ -1525,12 +1594,41 @@ settingsButton.addEventListener('click', () => {
   }
 
   setVaultVisible(false);
+  heatmapPanel.hidden = true;
   settingsPanel.hidden = !settingsPanel.hidden;
   session.expanded = true;
   hudContainer.classList.add('is-expanded');
   expandedPanel.hidden = false;
   miniBar.hidden = true;
   resizeHudWindow(settingsPanel.hidden ? EXPANDED_WINDOW_HEIGHT : VAULT_WINDOW_HEIGHT);
+});
+
+heatmapButton.addEventListener('click', async () => {
+  if (!session.startedAt || !hasHeatmapRank()) {
+    return;
+  }
+
+  setVaultVisible(false);
+  settingsPanel.hidden = true;
+  session.expanded = true;
+  hudContainer.classList.add('is-expanded');
+  expandedPanel.hidden = false;
+  miniBar.hidden = true;
+
+  if (heatmapPanel.hidden) {
+    try {
+      renderHeatmap(await window.electronAPI.loadHeatmapData());
+      heatmapPanel.hidden = false;
+    } catch (error) {
+      console.error('Heatmap load failed:', error);
+      renderHeatmap([]);
+      heatmapPanel.hidden = false;
+    }
+  } else {
+    heatmapPanel.hidden = true;
+  }
+
+  resizeHudWindow(EXPANDED_WINDOW_HEIGHT);
 });
 
 opacitySlider.addEventListener('input', () => {
@@ -1635,6 +1733,7 @@ async function initSession(config) {
   summaryScreen.hidden = true;
   summaryScreen.innerHTML = '';
   settingsPanel.hidden = true;
+  heatmapPanel.hidden = true;
   vaultPanel.hidden = true;
   comebackBanner.hidden = !session.isComeback;
   bossFightBanner.hidden = true;
@@ -1690,6 +1789,7 @@ async function showSummary() {
   sessionOver.hidden = true;
   bossFightBanner.hidden = true;
   settingsPanel.hidden = true;
+  heatmapPanel.hidden = true;
   setVaultVisible(false);
   endSessionButton.hidden = true;
   session.expanded = true;
@@ -1712,6 +1812,7 @@ function resetToStartScreen() {
   comebackBanner.hidden = true;
   bossFightBanner.hidden = true;
   settingsPanel.hidden = true;
+  heatmapPanel.hidden = true;
   vaultPanel.hidden = true;
   bossDefeatedToast.hidden = true;
   shareToast.hidden = true;
@@ -1761,6 +1862,7 @@ async function init() {
   hudContainer.hidden = true;
   vaultPanel.hidden = true;
   settingsPanel.hidden = true;
+  heatmapPanel.hidden = true;
   comebackBanner.hidden = true;
   bossFightBanner.hidden = true;
   bossDefeatedToast.hidden = true;

@@ -24,6 +24,62 @@ function ensureSessionsDir() {
   fs.mkdirSync(getSessionsDir(), { recursive: true });
 }
 
+function createEmptyHeatmapBuckets() {
+  return Array.from({ length: 24 }, (_item, hour) => ({
+    hour,
+    trades: 0,
+    wins: 0,
+    win_rate: 0
+  }));
+}
+
+function isSessionDataFile(file) {
+  return (
+    file.endsWith('.json') &&
+    file !== '_window.json' &&
+    file !== 'player.json' &&
+    file !== 'quests_state.json' &&
+    !file.startsWith('share_')
+  );
+}
+
+function loadHeatmapData() {
+  ensureSessionsDir();
+  const buckets = createEmptyHeatmapBuckets();
+
+  fs.readdirSync(getSessionsDir())
+    .filter(isSessionDataFile)
+    .forEach((file) => {
+      try {
+        const sessionData = JSON.parse(fs.readFileSync(path.join(getSessionsDir(), file), 'utf8'));
+        const trades = Array.isArray(sessionData.trades) ? sessionData.trades : [];
+
+        trades.forEach((trade) => {
+          const tradeDate = new Date(trade.at);
+          const hour = tradeDate.getHours();
+
+          if (!Number.isInteger(hour) || hour < 0 || hour > 23) {
+            return;
+          }
+
+          buckets[hour].trades++;
+
+          if (trade.type === 'ENTRY') {
+            buckets[hour].wins++;
+          }
+        });
+      } catch {
+        // Ignore malformed historical session files so analytics still loads.
+      }
+    });
+
+  return buckets.map((bucket) => ({
+    ...bucket,
+    win_rate:
+      bucket.trades === 0 ? 0 : Number(((bucket.wins / bucket.trades) * 100).toFixed(1))
+  }));
+}
+
 function loadWindowPosition() {
   try {
     return JSON.parse(fs.readFileSync(getPositionFile()));
@@ -204,6 +260,10 @@ app.whenReady().then(() => {
 
   ipcMain.handle('load-quest-defs', () => {
     return questStore.loadQuestDefs();
+  });
+
+  ipcMain.handle('load-heatmap-data', () => {
+    return loadHeatmapData();
   });
 
   ipcMain.handle('load-position', () => {
