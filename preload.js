@@ -3,7 +3,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('electronAPI', {
   setIgnoreMouse: (ignore) => ipcRenderer.send('set-ignore-mouse', ignore),
-  resizeWindow: (height) => ipcRenderer.invoke('resize-window', height),
+  resizeWindow: (height, width) => ipcRenderer.invoke('resize-window', { height, width }),
   saveSession: (data) => ipcRenderer.invoke('save-session', data),
   loadPlayer: () => ipcRenderer.invoke('load-player'),
   savePlayer: (data) => ipcRenderer.invoke('save-player', data),

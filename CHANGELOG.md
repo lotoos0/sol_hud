@@ -31,6 +31,15 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [0.13.1] - 2026-04-27
+
+### Fixed
+
+- Made the mini HUD width and lives area respond to the configured lives count so all hearts remain visible in collapsed mode.
+- Updated visible application version labels to `0.13.1`.
+
+---
+
 ## [0.13.0] - 2026-04-26
 
 ### Added
@@ -281,7 +290,8 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ---
 
-[Unreleased]: https://github.com/lotoos0/sol_hud/compare/v0.13.0...HEAD
+[Unreleased]: https://github.com/lotoos0/sol_hud/compare/v0.13.1...HEAD
+[0.13.1]: https://github.com/lotoos0/sol_hud/compare/v0.13.0...v0.13.1
 [0.13.0]: https://github.com/lotoos0/sol_hud/compare/v0.12.4...v0.13.0
 [0.12.4]: https://github.com/lotoos0/sol_hud/compare/v0.12.3...v0.12.4
 [0.12.3]: https://github.com/lotoos0/sol_hud/compare/v0.12.2...v0.12.3
