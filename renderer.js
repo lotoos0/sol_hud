@@ -1,5 +1,5 @@
 const PASSIVE_TIMEOUT = 5 * 60 * 1000;
-const APP_VERSION = '0.15.2';
+const APP_VERSION = '0.16.0';
 const RANK_TABLE = [
   { rank: 'Rookie', rank_level: 1, xp_required: 0, feature_unlock: 'basic_hud' },
   { rank: 'Scout', rank_level: 2, xp_required: 100, feature_unlock: 'session_history' },
@@ -467,13 +467,10 @@ async function applySessionRewards() {
     passiveEvents: session.passiveEvents
   });
   const sessionMultiplier = session.isComeback ? 2 : 1;
-  const earnedXP = (tradeRewards.xp + sessionRewards.xp) * sessionMultiplier;
-  const earnedCoins = tradeRewards.coins + sessionRewards.coins;
+  let earnedXP = (tradeRewards.xp + sessionRewards.xp) * sessionMultiplier;
+  let earnedCoins = tradeRewards.coins + sessionRewards.coins;
   const sessionWon = session.attempts > 0 && session.wins / session.attempts > 0.5;
 
-  // Quest completion checks will be attached in a later quest progression task.
-  playerData.xp += earnedXP;
-  playerData.coins += earnedCoins;
   playerData.total_sessions++;
   playerData.total_attempts += session.attempts;
   playerData.total_wins += session.wins;
@@ -508,8 +505,26 @@ async function applySessionRewards() {
         : Math.round((playerData.total_wins / playerData.total_attempts) * 100)
   };
 
+  const questsCompleted = completeEligibleQuests();
+  const questRewards = questsCompleted.reduce(
+    (totals, quest) => ({
+      xp: totals.xp + (Number(quest.xp) || 0),
+      coins: totals.coins + (Number(quest.coins) || 0)
+    }),
+    { xp: 0, coins: 0 }
+  );
+
+  earnedXP += questRewards.xp;
+  earnedCoins += questRewards.coins;
+  playerData.xp += earnedXP;
+  playerData.coins += earnedCoins;
+
   if (syncPlayerRank()) {
     showToast(`RANK UP: ${playerData.rank}`);
+  }
+
+  if (questsState) {
+    await window.electronAPI.saveQuestsState(questsState);
   }
 
   await window.electronAPI.savePlayer(playerData);
@@ -517,12 +532,38 @@ async function applySessionRewards() {
   return {
     xpEarned: earnedXP,
     coinsEarned: earnedCoins,
-    questsCompleted: [],
+    questsCompleted,
     bossStatus: session.bossDefeated ? 'defeated' : 'none'
   };
 }
 
 function ensureQuestStateShape(state) {
+  state.completed = {
+    mainline: Array.isArray(state.completed?.mainline) ? state.completed.mainline : [],
+    side_quests: Array.isArray(state.completed?.side_quests) ? state.completed.side_quests : [],
+    boss_fights: Array.isArray(state.completed?.boss_fights) ? state.completed.boss_fights : [],
+    achievements: Array.isArray(state.completed?.achievements) ? state.completed.achievements : []
+  };
+  state.progress = {
+    mainline: state.progress?.mainline || {},
+    side_quests: state.progress?.side_quests || {},
+    boss_fights: state.progress?.boss_fights || {},
+    achievements: state.progress?.achievements || {}
+  };
+  state.rewards_claimed = {
+    mainline: Array.isArray(state.rewards_claimed?.mainline)
+      ? state.rewards_claimed.mainline
+      : [],
+    side_quests: Array.isArray(state.rewards_claimed?.side_quests)
+      ? state.rewards_claimed.side_quests
+      : [],
+    boss_fights: Array.isArray(state.rewards_claimed?.boss_fights)
+      ? state.rewards_claimed.boss_fights
+      : [],
+    achievements: Array.isArray(state.rewards_claimed?.achievements)
+      ? state.rewards_claimed.achievements
+      : []
+  };
   state.boss_fight = {
     active: state.boss_fight?.active || state.active_boss_fight || null,
     last_triggered: state.boss_fight?.last_triggered || null
@@ -1081,17 +1122,13 @@ function buildSessionJSON() {
 }
 
 function getCompletedQuestIds(category) {
-  const value = questsState?.[category];
+  return Array.isArray(questsState?.completed?.[category]) ? questsState.completed[category] : [];
+}
 
-  if (Array.isArray(value?.completed)) {
-    return value.completed;
-  }
-
-  if (Array.isArray(value)) {
-    return value;
-  }
-
-  return [];
+function getClaimedQuestIds(category) {
+  return Array.isArray(questsState?.rewards_claimed?.[category])
+    ? questsState.rewards_claimed[category]
+    : [];
 }
 
 function getQuestMetricValue(metric) {
@@ -1117,12 +1154,100 @@ function getQuestMetricValue(metric) {
     sessions_without_passive_alerts: session.passiveEvents === 0 ? 1 : 0,
     sessions_within_sol_limit:
       Math.abs(session.pnl_sol) <= Number(session.config.sol_limit || 0) ? 1 : 0,
+    sessions_with_sol_limit_lte: Number(session.config.sol_limit) || 0,
+    session_exports: session.endedAt ? 1 : 0,
     locked_sessions: session.locked ? 1 : 0,
     contained_red_sessions: getBossMetric('contained_red_sessions'),
     disciplined_session_streak: playerData?.streak || 0
   };
 
   return metrics[metric] ?? 0;
+}
+
+function isQuestConditionMet(condition) {
+  const current = getQuestMetricValue(condition?.metric);
+  const target = Number(condition?.value) || 0;
+  const operator = condition?.operator || '>=';
+
+  if (operator === '<=') {
+    return current <= target;
+  }
+
+  if (operator === '>') {
+    return current > target;
+  }
+
+  if (operator === '<') {
+    return current < target;
+  }
+
+  if (operator === '===') {
+    return current === target;
+  }
+
+  return current >= target;
+}
+
+function getQuestProgressValue(quest) {
+  const current = getQuestMetricValue(quest.condition?.metric);
+  const target = Number(quest.condition?.value) || 1;
+
+  if (quest.condition?.operator === '<=') {
+    return current;
+  }
+
+  return Math.min(target, current);
+}
+
+function completeEligibleQuests() {
+  if (!questDefs || !questsState) {
+    return [];
+  }
+
+  const groups = [
+    { key: 'mainline', items: questDefs.mainline || [] },
+    { key: 'side_quests', items: questDefs.side_quests || [] },
+    { key: 'achievements', items: questDefs.achievements || [] }
+  ];
+  const completedNow = [];
+
+  groups.forEach((group) => {
+    const completed = getCompletedQuestIds(group.key);
+    const claimed = getClaimedQuestIds(group.key);
+
+    group.items.forEach((quest) => {
+      const progressValue = getQuestMetricValue(quest.condition?.metric);
+      const isCompleted = completed.includes(quest.id);
+      const isClaimed = claimed.includes(quest.id);
+
+      questsState.progress[group.key][quest.id] = progressValue;
+
+      if (isCompleted) {
+        if (!isClaimed) {
+          claimed.push(quest.id);
+          completedNow.push(quest);
+        }
+        return;
+      }
+
+      if (!isQuestConditionMet(quest.condition)) {
+        return;
+      }
+
+      completed.push(quest.id);
+
+      if (!isClaimed) {
+        claimed.push(quest.id);
+        completedNow.push(quest);
+      }
+
+      if (group.key === 'mainline' && Array.isArray(quest.unlock) && quest.unlock.length > 0) {
+        questsState.active_mainline = quest.unlock[0];
+      }
+    });
+  });
+
+  return completedNow;
 }
 
 function getQuestProgressRows() {
@@ -1137,8 +1262,8 @@ function getQuestProgressRows() {
 
     group.items.slice(0, 3).forEach((quest) => {
       const target = Number(quest.condition?.value) || 1;
-      const current = Math.min(target, getQuestMetricValue(quest.condition?.metric));
-      const isComplete = completed.includes(quest.id) || current >= target;
+      const current = getQuestProgressValue(quest);
+      const isComplete = completed.includes(quest.id) || isQuestConditionMet(quest.condition);
 
       rows.push({
         name: quest.name,
