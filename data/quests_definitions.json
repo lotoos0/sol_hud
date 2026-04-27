@@ -393,21 +393,36 @@
       "category": "sound_packs",
       "name": "Classic",
       "preview": "♪",
-      "price": 75
+      "price": 75,
+      "sounds": {
+        "entry": "data/Audio/confirmation_001.ogg",
+        "pass": "data/Audio/click_001.ogg",
+        "sl": "data/Audio/error_002.ogg"
+      }
     },
     {
       "id": "sound_arcade",
       "category": "sound_packs",
       "name": "Arcade",
       "preview": "♫",
-      "price": 120
+      "price": 120,
+      "sounds": {
+        "entry": "data/Audio/select_001.ogg",
+        "pass": "data/Audio/back_001.ogg",
+        "sl": "data/Audio/glitch_001.ogg"
+      }
     },
     {
       "id": "sound_zen",
       "category": "sound_packs",
       "name": "Zen",
       "preview": "♩",
-      "price": 90
+      "price": 90,
+      "sounds": {
+        "entry": "data/Audio/glass_001.ogg",
+        "pass": "data/Audio/pluck_001.ogg",
+        "sl": "data/Audio/drop_001.ogg"
+      }
     },
     {
       "id": "title_risk_manager",

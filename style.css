@@ -914,10 +914,21 @@ label,
   font-size: 9px;
 }
 
+.vault-actions {
+  display: flex;
+  gap: 4px;
+}
+
 .vault-item button {
   width: 100%;
   height: 24px;
   font-size: 9px;
+}
+
+.vault-actions button[data-action="preview-sound"] {
+  flex: 0 0 26px;
+  width: 26px;
+  padding: 0;
 }
 
 @keyframes pulse-border {

@@ -1,5 +1,5 @@
 const PASSIVE_TIMEOUT = 5 * 60 * 1000;
-const APP_VERSION = '0.16.0';
+const APP_VERSION = '0.17.0';
 const RANK_TABLE = [
   { rank: 'Rookie', rank_level: 1, xp_required: 0, feature_unlock: 'basic_hud' },
   { rank: 'Scout', rank_level: 2, xp_required: 100, feature_unlock: 'session_history' },
@@ -580,6 +580,21 @@ function getCosmeticItem(itemId) {
   return getCosmetics().find((item) => item.id === itemId) || null;
 }
 
+function playSound(action, packId = playerData?.active_sound_packs) {
+  if (!packId) {
+    return;
+  }
+
+  const pack = getCosmeticItem(packId);
+  const source = pack?.sounds?.[action];
+
+  if (!source) {
+    return;
+  }
+
+  new Audio(source).play().catch(() => {});
+}
+
 function getUnlockedKey(category) {
   return `unlocked_${category}`;
 }
@@ -633,13 +648,20 @@ function renderVault(category = activeVaultCategory) {
       const actionLabel = active ? 'Active' : unlocked ? 'Equip' : 'Buy';
       const action = unlocked ? 'equip' : 'purchase';
       const disabled = active ? ' disabled' : '';
+      const previewButton =
+        item.category === 'sound_packs'
+          ? `<button type="button" data-action="preview-sound" data-id="${item.id}" aria-label="Preview ${item.name}">▶</button>`
+          : '';
 
       return `
         <div class="vault-item ${unlocked ? 'is-owned' : 'is-locked'} ${active ? 'is-active' : ''}">
           <div class="vault-preview">${item.preview || ''}</div>
           <div class="vault-name">${item.name}</div>
           <div class="vault-status">${status}</div>
-          <button type="button" data-action="${action}" data-id="${item.id}"${disabled}>${actionLabel}</button>
+          <div class="vault-actions">
+            <button type="button" data-action="${action}" data-id="${item.id}"${disabled}>${actionLabel}</button>
+            ${previewButton}
+          </div>
         </div>
       `;
     })
@@ -1651,6 +1673,7 @@ async function onEntry() {
   session.pnl_sol += pnlAmount;
   logTrade('ENTRY', pnlAmount, checkedCount);
   updateRecentResults('win');
+  playSound('entry');
   pnlInput.value = '';
   resetChecklist();
   resetPassiveTimer();
@@ -1666,6 +1689,7 @@ async function onPass() {
   session.losses++;
   logTrade('PASS', 0, getCheckedCount());
   updateRecentResults('loss');
+  playSound('pass');
   resetChecklist();
   resetPassiveTimer();
   await handlePostAction();
@@ -1684,6 +1708,7 @@ async function onSL() {
   session.pnl_sol -= pnlAmount;
   logTrade('SL', pnlAmount, getCheckedCount());
   updateRecentResults('loss');
+  playSound('sl');
   pnlInput.value = '';
   resetChecklist();
   resetPassiveTimer();
@@ -1803,6 +1828,8 @@ vaultGrid.addEventListener('click', async (event) => {
 
   if (button.dataset.action === 'purchase') {
     await onPurchaseItem(button.dataset.id);
+  } else if (button.dataset.action === 'preview-sound') {
+    playSound('entry', button.dataset.id);
   } else {
     await onEquipItem(button.dataset.id);
   }
