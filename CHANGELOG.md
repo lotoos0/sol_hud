@@ -31,6 +31,33 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [0.13.3] - 2026-04-27
+
+### Fixed
+
+- Added streak-aware collapsed HUD width padding so the right-side controls are not clipped when five lives and streak UI are visible.
+- Updated visible application version labels to `0.13.3`.
+
+---
+
+## [0.13.2] - 2026-04-27
+
+### Fixed
+
+- Increased the collapsed HUD lives slot buffer so five rendered heart emojis do not clip at the right edge.
+- Updated visible application version labels to `0.13.2`.
+
+---
+
+## [0.13.1] - 2026-04-27
+
+### Fixed
+
+- Made the mini HUD width and lives area respond to the configured lives count so all hearts remain visible in collapsed mode.
+- Updated visible application version labels to `0.13.1`.
+
+---
+
 ## [0.13.0] - 2026-04-26
 
 ### Added
@@ -281,7 +308,10 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ---
 
-[Unreleased]: https://github.com/lotoos0/sol_hud/compare/v0.13.0...HEAD
+[Unreleased]: https://github.com/lotoos0/sol_hud/compare/v0.13.3...HEAD
+[0.13.3]: https://github.com/lotoos0/sol_hud/compare/v0.13.2...v0.13.3
+[0.13.2]: https://github.com/lotoos0/sol_hud/compare/v0.13.1...v0.13.2
+[0.13.1]: https://github.com/lotoos0/sol_hud/compare/v0.13.0...v0.13.1
 [0.13.0]: https://github.com/lotoos0/sol_hud/compare/v0.12.4...v0.13.0
 [0.12.4]: https://github.com/lotoos0/sol_hud/compare/v0.12.3...v0.12.4
 [0.12.3]: https://github.com/lotoos0/sol_hud/compare/v0.12.2...v0.12.3

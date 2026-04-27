@@ -23,6 +23,18 @@ const COIN_TABLE = {
   session_with_review: 8
 };
 const BENCHMARK_WIN_RATE = 68.75;
+const DEFAULT_WINDOW_WIDTH = 280;
+const START_WINDOW_HEIGHT = 180;
+const MINI_WINDOW_HEIGHT = 44;
+const EXPANDED_WINDOW_HEIGHT = 460;
+const LOCKED_WINDOW_HEIGHT = 320;
+const SUMMARY_WINDOW_HEIGHT = 500;
+const VAULT_WINDOW_HEIGHT = 500;
+const DEFAULT_LIVES_SLOT_WIDTH = 72;
+const HEART_SLOT_WIDTH = 21;
+const LIVES_SLOT_PADDING = 14;
+const MINI_BAR_SAFETY_WIDTH = 36;
+const STREAK_SLOT_WIDTH = 26;
 const DEFAULT_HEART_FULL = '\u2764\uFE0F';
 let HEART_FULL = DEFAULT_HEART_FULL;
 const HEART_EMPTY = '\uD83D\uDDA4';
@@ -273,6 +285,25 @@ function scheduleOpacitySave(value) {
     playerData.hud_opacity = clampOpacity(value);
     await window.electronAPI.savePlayer(playerData);
   }, 300);
+}
+
+function getLivesSlotWidth() {
+  return Math.max(DEFAULT_LIVES_SLOT_WIDTH, session.maxLives * HEART_SLOT_WIDTH + LIVES_SLOT_PADDING);
+}
+
+function getResponsiveWindowWidth() {
+  const livesOverflow = Math.max(0, getLivesSlotWidth() - DEFAULT_LIVES_SLOT_WIDTH);
+  const streakWidth = playerData && playerData.rank_level >= 3 ? STREAK_SLOT_WIDTH : 0;
+
+  return DEFAULT_WINDOW_WIDTH + livesOverflow + streakWidth + MINI_BAR_SAFETY_WIDTH;
+}
+
+function applyResponsiveLayout() {
+  document.documentElement.style.setProperty('--lives-slot', `${getLivesSlotWidth()}px`);
+}
+
+function resizeHudWindow(height, width = getResponsiveWindowWidth()) {
+  return window.electronAPI.resizeWindow(height, width);
 }
 
 function ensurePlayerShape(player) {
@@ -587,14 +618,14 @@ function setVaultVisible(visible) {
     expandedPanel.hidden = true;
     miniBar.hidden = false;
     hudContainer.classList.remove('is-expanded', 'is-summary');
-    window.electronAPI.resizeWindow(500);
+    resizeHudWindow(VAULT_WINDOW_HEIGHT);
   } else {
     const targetHeight = session.expanded
-      ? 460
+      ? EXPANDED_WINDOW_HEIGHT
       : session.startedAt
-        ? 44
-        : 180;
-    window.electronAPI.resizeWindow(targetHeight);
+        ? MINI_WINDOW_HEIGHT
+        : START_WINDOW_HEIGHT;
+    resizeHudWindow(targetHeight, session.startedAt ? getResponsiveWindowWidth() : DEFAULT_WINDOW_WIDTH);
   }
 }
 
@@ -845,7 +876,7 @@ function renderBossFightBanner() {
   hudContainer.classList.add('is-expanded');
   expandedPanel.hidden = false;
   miniBar.hidden = true;
-  window.electronAPI.resizeWindow(460);
+  resizeHudWindow(EXPANDED_WINDOW_HEIGHT);
   updateSessionTimer();
 }
 
@@ -1090,6 +1121,8 @@ async function autoSave() {
 }
 
 function renderHearts() {
+  applyResponsiveLayout();
+
   const hearts = Array.from({ length: session.maxLives }, (_item, index) => {
     return index < session.lives ? HEART_FULL : HEART_EMPTY;
   }).join('');
@@ -1177,7 +1210,7 @@ function lockSession() {
   hudContainer.classList.add('is-expanded', 'is-locked');
   expandedPanel.hidden = false;
   miniBar.hidden = true;
-  window.electronAPI.resizeWindow(320);
+  resizeHudWindow(LOCKED_WINDOW_HEIGHT);
 }
 
 function readPnlAmount() {
@@ -1304,7 +1337,7 @@ expandButton.addEventListener('click', () => {
   hudContainer.classList.add('is-expanded');
   expandedPanel.hidden = false;
   miniBar.hidden = true;
-  window.electronAPI.resizeWindow(460);
+  resizeHudWindow(EXPANDED_WINDOW_HEIGHT);
   window.electronAPI.setIgnoreMouse(false);
 });
 
@@ -1318,7 +1351,7 @@ collapseButton.addEventListener('click', () => {
   hudContainer.classList.remove('is-expanded');
   expandedPanel.hidden = true;
   miniBar.hidden = false;
-  window.electronAPI.resizeWindow(44);
+  resizeHudWindow(MINI_WINDOW_HEIGHT);
   window.electronAPI.setIgnoreMouse(false);
 });
 
@@ -1333,7 +1366,7 @@ settingsButton.addEventListener('click', () => {
   hudContainer.classList.add('is-expanded');
   expandedPanel.hidden = false;
   miniBar.hidden = true;
-  window.electronAPI.resizeWindow(settingsPanel.hidden ? 460 : 500);
+  resizeHudWindow(settingsPanel.hidden ? EXPANDED_WINDOW_HEIGHT : VAULT_WINDOW_HEIGHT);
 });
 
 opacitySlider.addEventListener('input', () => {
@@ -1403,7 +1436,7 @@ startButton.addEventListener('click', async () => {
   await initSession({ lives, solLimit });
   startScreen.hidden = true;
   hudContainer.hidden = false;
-  await window.electronAPI.resizeWindow(session.expanded ? 460 : 44);
+  await resizeHudWindow(session.expanded ? EXPANDED_WINDOW_HEIGHT : MINI_WINDOW_HEIGHT);
   window.electronAPI.setIgnoreMouse(false);
 });
 
@@ -1432,6 +1465,7 @@ async function initSession(config) {
       sol_limit: config.solLimit
     }
   });
+  applyResponsiveLayout();
 
   sessionOver.hidden = true;
   summaryScreen.hidden = true;
@@ -1499,12 +1533,13 @@ async function showSummary() {
   hudContainer.classList.remove('is-locked');
   expandedPanel.hidden = false;
   miniBar.hidden = true;
-  window.electronAPI.resizeWindow(500);
+  resizeHudWindow(SUMMARY_WINDOW_HEIGHT);
 }
 
 function resetToStartScreen() {
   const windowPos = session.windowPos;
   Object.assign(session, createDefaultSession(), { windowPos });
+  applyResponsiveLayout();
   clearTimeout(passiveTimer);
   stopSessionTimer();
   clearTimeout(opacitySaveTimer);
@@ -1535,7 +1570,7 @@ function resetToStartScreen() {
   miniBar.hidden = false;
   startScreen.hidden = false;
   startButton.disabled = false;
-  window.electronAPI.resizeWindow(180);
+  resizeHudWindow(START_WINDOW_HEIGHT, DEFAULT_WINDOW_WIDTH);
   window.electronAPI.setIgnoreMouse(false);
   renderAll();
 }
@@ -1567,7 +1602,7 @@ async function init() {
   tiltAlert.hidden = true;
   sessionTimer.hidden = true;
   startScreen.hidden = false;
-  await window.electronAPI.resizeWindow(180);
+  await resizeHudWindow(START_WINDOW_HEIGHT, DEFAULT_WINDOW_WIDTH);
   window.electronAPI.setIgnoreMouse(false);
   window.electronAPI.onKbEntry(() => {
     if (session.startedAt && !session.locked) {

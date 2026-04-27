@@ -151,9 +151,16 @@ app.whenReady().then(() => {
   playerStore.init(getDataDir());
   questStore.init(getDataDir());
 
-  ipcMain.handle('resize-window', (_event, h) => {
+  ipcMain.handle('resize-window', (_event, size) => {
     if (win) {
-      win.setSize(280, h);
+      const nextSize =
+        typeof size === 'object'
+          ? size
+          : { height: size };
+      const width = Number(nextSize.width) || 280;
+      const height = Number(nextSize.height) || 180;
+
+      win.setSize(width, height);
     }
   });
 
