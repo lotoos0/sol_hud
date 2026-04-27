@@ -31,6 +31,15 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [0.15.1] - 2026-04-27
+
+### Fixed
+
+- Changed keyboard shortcuts from bare `E`, `P`, and `S` keys to `Alt+E`, `Alt+P`, and `Alt+S`.
+- Updated visible application version labels to `0.15.1`.
+
+---
+
 ## [0.15.0] - 2026-04-27
 
 ### Added
@@ -336,7 +345,8 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ---
 
-[Unreleased]: https://github.com/lotoos0/sol_hud/compare/v0.15.0...HEAD
+[Unreleased]: https://github.com/lotoos0/sol_hud/compare/v0.15.1...HEAD
+[0.15.1]: https://github.com/lotoos0/sol_hud/compare/v0.15.0...v0.15.1
 [0.15.0]: https://github.com/lotoos0/sol_hud/compare/v0.14.0...v0.15.0
 [0.14.0]: https://github.com/lotoos0/sol_hud/compare/v0.13.3...v0.14.0
 [0.13.3]: https://github.com/lotoos0/sol_hud/compare/v0.13.2...v0.13.3
