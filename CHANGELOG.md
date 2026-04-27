@@ -31,6 +31,15 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [0.13.2] - 2026-04-27
+
+### Fixed
+
+- Increased the collapsed HUD lives slot buffer so five rendered heart emojis do not clip at the right edge.
+- Updated visible application version labels to `0.13.2`.
+
+---
+
 ## [0.13.1] - 2026-04-27
 
 ### Fixed
@@ -290,7 +299,8 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ---
 
-[Unreleased]: https://github.com/lotoos0/sol_hud/compare/v0.13.1...HEAD
+[Unreleased]: https://github.com/lotoos0/sol_hud/compare/v0.13.2...HEAD
+[0.13.2]: https://github.com/lotoos0/sol_hud/compare/v0.13.1...v0.13.2
 [0.13.1]: https://github.com/lotoos0/sol_hud/compare/v0.13.0...v0.13.1
 [0.13.0]: https://github.com/lotoos0/sol_hud/compare/v0.12.4...v0.13.0
 [0.12.4]: https://github.com/lotoos0/sol_hud/compare/v0.12.3...v0.12.4

@@ -30,8 +30,9 @@ const EXPANDED_WINDOW_HEIGHT = 460;
 const LOCKED_WINDOW_HEIGHT = 320;
 const SUMMARY_WINDOW_HEIGHT = 500;
 const VAULT_WINDOW_HEIGHT = 500;
-const DEFAULT_LIVES_SLOT_WIDTH = 60;
-const HEART_SLOT_WIDTH = 18;
+const DEFAULT_LIVES_SLOT_WIDTH = 72;
+const HEART_SLOT_WIDTH = 21;
+const LIVES_SLOT_PADDING = 14;
 const DEFAULT_HEART_FULL = '\u2764\uFE0F';
 let HEART_FULL = DEFAULT_HEART_FULL;
 const HEART_EMPTY = '\uD83D\uDDA4';
@@ -285,7 +286,7 @@ function scheduleOpacitySave(value) {
 }
 
 function getLivesSlotWidth() {
-  return Math.max(DEFAULT_LIVES_SLOT_WIDTH, session.maxLives * HEART_SLOT_WIDTH + 6);
+  return Math.max(DEFAULT_LIVES_SLOT_WIDTH, session.maxLives * HEART_SLOT_WIDTH + LIVES_SLOT_PADDING);
 }
 
 function getResponsiveWindowWidth() {

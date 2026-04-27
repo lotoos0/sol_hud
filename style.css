@@ -5,7 +5,7 @@
   --dim: #1a1a2e;
   --text: #effff7;
   --hud-opacity: 1;
-  --lives-slot: 60px;
+  --lives-slot: 72px;
 }
 
 html,
@@ -300,6 +300,7 @@ body {
   min-width: var(--lives-slot);
   overflow: hidden;
   white-space: nowrap;
+  letter-spacing: 1px;
 }
 
 .stats-mini {
