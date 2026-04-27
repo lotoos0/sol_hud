@@ -1,6 +1,18 @@
 // bridge placeholder
 const { contextBridge, ipcRenderer } = require('electron');
 
+function subscribe(channel, callback, mapArgs = (_event, ...args) => args) {
+  const listener = (event, ...args) => {
+    callback(...mapArgs(event, ...args));
+  };
+
+  ipcRenderer.on(channel, listener);
+
+  return () => {
+    ipcRenderer.removeListener(channel, listener);
+  };
+}
+
 contextBridge.exposeInMainWorld('electronAPI', {
   setIgnoreMouse: (ignore) => ipcRenderer.send('set-ignore-mouse', ignore),
   resizeWindow: (height, width) => ipcRenderer.invoke('resize-window', { height, width }),
@@ -18,18 +30,18 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getSessionIds: () => ipcRenderer.invoke('get-session-ids'),
   openSessionsFolder: () => ipcRenderer.invoke('open-sessions-folder'),
   onKbEntry: (callback) => {
-    ipcRenderer.on('kb-entry', callback);
+    return subscribe('kb-entry', callback);
   },
   onKbPass: (callback) => {
-    ipcRenderer.on('kb-pass', callback);
+    return subscribe('kb-pass', callback);
   },
   onKbSl: (callback) => {
-    ipcRenderer.on('kb-sl', callback);
+    return subscribe('kb-sl', callback);
   },
   onWindowPositionChanged: (callback) => {
-    ipcRenderer.on('window-position-changed', (_event, pos) => callback(pos));
+    return subscribe('window-position-changed', callback);
   },
   onUpdaterStatus: (callback) => {
-    ipcRenderer.on('updater-status', (_event, data) => callback(data));
+    return subscribe('updater-status', callback);
   }
 });

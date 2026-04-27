@@ -29,6 +29,8 @@ function createEmptyHeatmapBuckets() {
     hour,
     trades: 0,
     wins: 0,
+    losses: 0,
+    sl: 0,
     win_rate: 0
   }));
 }
@@ -53,10 +55,15 @@ function loadHeatmapData() {
       try {
         const sessionData = JSON.parse(fs.readFileSync(path.join(getSessionsDir(), file), 'utf8'));
         const trades = Array.isArray(sessionData.trades) ? sessionData.trades : [];
+        let previousWins = 0;
+        let previousLosses = 0;
 
         trades.forEach((trade) => {
           const tradeDate = new Date(trade.at);
           const hour = tradeDate.getHours();
+          const currentWins = Number(trade.wins);
+          const currentLosses = Number(trade.losses);
+          const hasSnapshots = Number.isFinite(currentWins) && Number.isFinite(currentLosses);
 
           if (!Number.isInteger(hour) || hour < 0 || hour > 23) {
             return;
@@ -64,8 +71,21 @@ function loadHeatmapData() {
 
           buckets[hour].trades++;
 
-          if (trade.type === 'ENTRY') {
+          if (hasSnapshots && currentWins > previousWins) {
             buckets[hour].wins++;
+          }
+
+          if (hasSnapshots && currentLosses > previousLosses) {
+            buckets[hour].losses++;
+          }
+
+          if (trade.type === 'SL') {
+            buckets[hour].sl++;
+          }
+
+          if (hasSnapshots) {
+            previousWins = currentWins;
+            previousLosses = currentLosses;
           }
         });
       } catch {
@@ -76,7 +96,9 @@ function loadHeatmapData() {
   return buckets.map((bucket) => ({
     ...bucket,
     win_rate:
-      bucket.trades === 0 ? 0 : Number(((bucket.wins / bucket.trades) * 100).toFixed(1))
+      bucket.wins + bucket.losses === 0
+        ? 0
+        : Number(((bucket.wins / (bucket.wins + bucket.losses)) * 100).toFixed(1))
   }));
 }
 
@@ -285,7 +307,7 @@ app.whenReady().then(() => {
 
     return fs
       .readdirSync(getSessionsDir())
-      .filter((file) => file.endsWith('.json') && file !== '_window.json')
+      .filter(isSessionDataFile)
       .map((file) => path.basename(file, '.json'));
   });
 
