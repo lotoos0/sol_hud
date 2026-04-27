@@ -172,6 +172,16 @@ app.whenReady().then(() => {
     return { ok: true, path: file };
   });
 
+  ipcMain.handle('save-share-card', (_event, data) => {
+    ensureSessionsDir();
+    const sessionId = String(data.session_id || 'session').replace(/[^a-zA-Z0-9_-]/g, '_');
+    const file = path.join(getSessionsDir(), `share_${sessionId}.png`);
+    fs.writeFileSync(file, Buffer.from(data.base64, 'base64'));
+    shell.openPath(file);
+
+    return { ok: true, path: file };
+  });
+
   ipcMain.handle('load-player', () => {
     return playerStore.loadPlayer();
   });

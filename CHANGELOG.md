@@ -31,6 +31,20 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [0.14.0] - 2026-04-27
+
+### Added
+
+- Added share-card PNG generation from the session recap using the native Canvas API.
+- Added IPC export for saving share cards to `sessions/share_<session_id>.png` and opening the saved file.
+- Added a share export toast for success and failure states.
+
+### Changed
+
+- Updated visible application version labels to `0.14.0`.
+
+---
+
 ## [0.13.3] - 2026-04-27
 
 ### Fixed
@@ -308,7 +322,8 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ---
 
-[Unreleased]: https://github.com/lotoos0/sol_hud/compare/v0.13.3...HEAD
+[Unreleased]: https://github.com/lotoos0/sol_hud/compare/v0.14.0...HEAD
+[0.14.0]: https://github.com/lotoos0/sol_hud/compare/v0.13.3...v0.14.0
 [0.13.3]: https://github.com/lotoos0/sol_hud/compare/v0.13.2...v0.13.3
 [0.13.2]: https://github.com/lotoos0/sol_hud/compare/v0.13.1...v0.13.2
 [0.13.1]: https://github.com/lotoos0/sol_hud/compare/v0.13.0...v0.13.1
