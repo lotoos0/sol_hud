@@ -1,4 +1,5 @@
 const PASSIVE_TIMEOUT = 5 * 60 * 1000;
+const APP_VERSION = '0.14.0';
 const RANK_TABLE = [
   { rank: 'Rookie', rank_level: 1, xp_required: 0, feature_unlock: 'basic_hud' },
   { rank: 'Scout', rank_level: 2, xp_required: 100, feature_unlock: 'session_history' },
@@ -123,6 +124,7 @@ const checklistKeys = ['chart', 'narrative', 'bubblemap', 'holders'];
 
 const sessionOver = document.getElementById('session-over');
 const loginBonusToast = document.getElementById('login-bonus-toast');
+const shareToast = document.getElementById('share-toast');
 const comebackBanner = document.getElementById('comeback-banner');
 
 function getRankFromXP(xp) {
@@ -233,6 +235,22 @@ function showToast(message) {
 
   setTimeout(() => {
     loginBonusToast.hidden = true;
+  }, 3000);
+}
+
+function showShareToast(message) {
+  if (!shareToast) {
+    return;
+  }
+
+  shareToast.textContent = message;
+  shareToast.hidden = false;
+  shareToast.classList.remove('toast-flash');
+  void shareToast.offsetWidth;
+  shareToast.classList.add('toast-flash');
+
+  setTimeout(() => {
+    shareToast.hidden = true;
   }, 3000);
 }
 
@@ -1092,13 +1110,159 @@ function buildRecapHTML({ xpEarned, coinsEarned, questsCompleted, bossStatus }) 
   `;
 }
 
-function bindRecapActions() {
+function getShareQuestLabel(rewardsData) {
+  const completedQuest = rewardsData?.questsCompleted?.[0];
+
+  if (typeof completedQuest === 'string') {
+    return completedQuest;
+  }
+
+  if (completedQuest?.name) {
+    return completedQuest.name;
+  }
+
+  const completedProgress = getQuestProgressRows().find((quest) => quest.complete);
+
+  return completedProgress?.name || 'Quest tracking';
+}
+
+function drawShareText(ctx, text, x, y, options = {}) {
+  ctx.fillStyle = options.color || '#effff7';
+  ctx.font = options.font || '16px Segoe UI';
+  ctx.textAlign = options.align || 'left';
+  ctx.fillText(text, x, y);
+}
+
+function generateShareCard(sessionData, player, rewardsData) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 600;
+  canvas.height = 340;
+
+  const ctx = canvas.getContext('2d');
+
+  if (!ctx) {
+    throw new Error('Canvas context unavailable');
+  }
+
+  const winRate = Number(sessionData.summary?.win_rate) || 0;
+  const isGoodRate = winRate >= BENCHMARK_WIN_RATE;
+  const accent = '#00ff88';
+  const danger = '#ff3366';
+  const panel = '#11111d';
+  const muted = 'rgba(239,255,247,0.62)';
+  const sessionDate = sessionData.ended_at || sessionData.started_at || new Date().toISOString();
+
+  ctx.fillStyle = '#0a0a0f';
+  ctx.fillRect(0, 0, 600, 340);
+  ctx.strokeStyle = accent;
+  ctx.lineWidth = 3;
+  ctx.shadowColor = 'rgba(0,255,136,0.4)';
+  ctx.shadowBlur = 12;
+  ctx.strokeRect(12, 12, 576, 316);
+  ctx.shadowBlur = 0;
+
+  [
+    [32, 54, 150, 210],
+    [206, 54, 188, 210],
+    [418, 54, 150, 210]
+  ].forEach(([x, y, width, height]) => {
+    ctx.fillStyle = panel;
+    ctx.fillRect(x, y, width, height);
+    ctx.strokeStyle = 'rgba(0,255,136,0.28)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x, y, width, height);
+  });
+
+  drawShareText(ctx, 'SESSION', 50, 84, { color: muted, font: '11px Segoe UI' });
+  drawShareText(ctx, sessionData.session_id || '-', 50, 112, {
+    color: accent,
+    font: '18px Segoe UI Semibold'
+  });
+  drawShareText(ctx, new Date(sessionDate).toLocaleDateString(), 50, 148, {
+    color: muted,
+    font: '13px Segoe UI'
+  });
+  drawShareText(ctx, `Rank: ${player?.rank || 'Rookie'}`, 50, 188, {
+    color: '#effff7',
+    font: '15px Segoe UI Semibold'
+  });
+  drawShareText(ctx, `Streak: ${Number(player?.streak) || 0}`, 50, 224, {
+    color: muted,
+    font: '13px Segoe UI'
+  });
+
+  drawShareText(ctx, 'WIN RATE', 300, 92, { color: muted, font: '12px Segoe UI', align: 'center' });
+  drawShareText(ctx, `${winRate.toFixed(1)}%`, 300, 158, {
+    color: isGoodRate ? accent : danger,
+    font: '52px Segoe UI Semibold',
+    align: 'center'
+  });
+  drawShareText(ctx, `Benchmark ${BENCHMARK_WIN_RATE}%`, 300, 190, {
+    color: muted,
+    font: '12px Segoe UI',
+    align: 'center'
+  });
+  drawShareText(ctx, `Attempts ${sessionData.summary?.attempts || 0}`, 246, 232, {
+    color: '#effff7',
+    font: '15px Segoe UI Semibold'
+  });
+  drawShareText(ctx, `Wins ${sessionData.summary?.wins || 0}`, 326, 232, {
+    color: '#effff7',
+    font: '15px Segoe UI Semibold'
+  });
+
+  drawShareText(ctx, 'REWARDS', 436, 84, { color: muted, font: '11px Segoe UI' });
+  drawShareText(ctx, `XP +${rewardsData?.xpEarned || 0}`, 436, 124, {
+    color: accent,
+    font: '24px Segoe UI Semibold'
+  });
+  drawShareText(ctx, `Coins +${rewardsData?.coinsEarned || 0}`, 436, 166, {
+    color: accent,
+    font: '22px Segoe UI Semibold'
+  });
+  drawShareText(ctx, 'Quest', 436, 208, { color: muted, font: '12px Segoe UI' });
+  drawShareText(ctx, getShareQuestLabel(rewardsData), 436, 234, {
+    color: '#effff7',
+    font: '14px Segoe UI Semibold'
+  });
+
+  ctx.fillStyle = 'rgba(0,255,136,0.08)';
+  ctx.fillRect(32, 286, 536, 24);
+  drawShareText(ctx, 'SOL TRADER HUD', 48, 303, {
+    color: accent,
+    font: '13px Segoe UI Semibold'
+  });
+  drawShareText(ctx, `v${APP_VERSION}`, 552, 303, {
+    color: muted,
+    font: '12px Segoe UI',
+    align: 'right'
+  });
+
+  return canvas.toDataURL('image/png').split(',')[1];
+}
+
+async function handleShareCard(rewardsData) {
+  try {
+    const sessionData = buildSessionJSON();
+    const base64 = generateShareCard(sessionData, playerData, rewardsData);
+    await window.electronAPI.saveShareCard({
+      base64,
+      session_id: sessionData.session_id
+    });
+    showShareToast('Card saved!');
+  } catch (error) {
+    console.error('Share card export failed:', error);
+    showShareToast('Export failed');
+  }
+}
+
+function bindRecapActions(rewardsData) {
   const shareButton = document.getElementById('btn-share');
   const newSessionButton = document.getElementById('btn-new-session');
 
   if (shareButton) {
     shareButton.addEventListener('click', () => {
-      showToast('SHARE READY IN TASK #6');
+      handleShareCard(rewardsData);
     });
   }
 
@@ -1520,7 +1684,7 @@ async function showSummary() {
   await autoSave();
   const sessionRewards = await applySessionRewards();
   summaryScreen.innerHTML = buildRecapHTML(sessionRewards);
-  bindRecapActions();
+  bindRecapActions(sessionRewards);
 
   summaryScreen.hidden = false;
   sessionOver.hidden = true;
@@ -1550,6 +1714,7 @@ function resetToStartScreen() {
   settingsPanel.hidden = true;
   vaultPanel.hidden = true;
   bossDefeatedToast.hidden = true;
+  shareToast.hidden = true;
   tiltAlert.hidden = true;
   endSessionButton.hidden = false;
   hudContainer.hidden = true;

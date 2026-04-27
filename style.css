@@ -28,7 +28,8 @@ body {
   min-height: 100%;
 }
 
-#login-bonus-toast {
+#login-bonus-toast,
+#share-toast {
   position: absolute;
   top: 8px;
   left: 50%;
@@ -47,6 +48,10 @@ body {
   transform: translateX(-50%);
   box-shadow: 0 0 14px rgba(0, 255, 136, 0.45);
   -webkit-app-region: no-drag;
+}
+
+#share-toast {
+  top: 46px;
 }
 
 #tilt-alert,

@@ -5,6 +5,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   setIgnoreMouse: (ignore) => ipcRenderer.send('set-ignore-mouse', ignore),
   resizeWindow: (height, width) => ipcRenderer.invoke('resize-window', { height, width }),
   saveSession: (data) => ipcRenderer.invoke('save-session', data),
+  saveShareCard: (data) => ipcRenderer.invoke('save-share-card', data),
   loadPlayer: () => ipcRenderer.invoke('load-player'),
   savePlayer: (data) => ipcRenderer.invoke('save-player', data),
   loadQuestsState: () => ipcRenderer.invoke('load-quests-state'),
