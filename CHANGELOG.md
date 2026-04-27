@@ -31,6 +31,18 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [0.15.2] - 2026-04-27
+
+### Fixed
+
+- Excluded `player.json` and `quests_state.json` from session ID listings.
+- Calculated heatmap win rate from recorded win/loss snapshots instead of treating every `ENTRY` as a win.
+- Added separate SL counts to heatmap data and tooltips.
+- Returned IPC listener cleanup functions from the preload bridge and cleaned renderer/updater listeners on unload.
+- Updated visible application version labels to `0.15.2`.
+
+---
+
 ## [0.15.1] - 2026-04-27
 
 ### Fixed
@@ -345,7 +357,8 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ---
 
-[Unreleased]: https://github.com/lotoos0/sol_hud/compare/v0.15.1...HEAD
+[Unreleased]: https://github.com/lotoos0/sol_hud/compare/v0.15.2...HEAD
+[0.15.2]: https://github.com/lotoos0/sol_hud/compare/v0.15.1...v0.15.2
 [0.15.1]: https://github.com/lotoos0/sol_hud/compare/v0.15.0...v0.15.1
 [0.15.0]: https://github.com/lotoos0/sol_hud/compare/v0.14.0...v0.15.0
 [0.14.0]: https://github.com/lotoos0/sol_hud/compare/v0.13.3...v0.14.0

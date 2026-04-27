@@ -1,5 +1,5 @@
 const PASSIVE_TIMEOUT = 5 * 60 * 1000;
-const APP_VERSION = '0.15.1';
+const APP_VERSION = '0.15.2';
 const RANK_TABLE = [
   { rank: 'Rookie', rank_level: 1, xp_required: 0, feature_unlock: 'basic_hud' },
   { rank: 'Scout', rank_level: 2, xp_required: 100, feature_unlock: 'session_history' },
@@ -83,6 +83,7 @@ let questDefs = null;
 let questsState = null;
 let opacitySaveTimer = null;
 let activeVaultCategory = 'heart_skins';
+const ipcCleanupCallbacks = [];
 
 const startScreen = document.getElementById('start-screen');
 const livesInput = document.getElementById('cfg-lives');
@@ -742,19 +743,30 @@ function renderHeatmap(data) {
       hour,
       trades: 0,
       wins: 0,
+      losses: 0,
+      sl: 0,
       win_rate: 0
     };
     const trades = Number(bucket.trades) || 0;
     const winRate = Number(bucket.win_rate) || 0;
+    const wins = Number(bucket.wins) || 0;
+    const losses = Number(bucket.losses) || 0;
+    const sl = Number(bucket.sl) || 0;
     const cell = document.createElement('div');
 
     cell.className = 'heatmap-cell';
     cell.textContent = `${hour}h`;
     cell.style.backgroundColor = interpolateHeatmapColor(winRate);
     cell.style.opacity = String(trades === 0 ? 0.18 : Math.min(1, 0.3 + (trades / maxTrades) * 0.7));
-    cell.dataset.tooltip = `${trades} trades, ${winRate.toFixed(1)}% WR`;
+    cell.dataset.tooltip = `${trades} trades, W:${wins} L:${losses} SL:${sl}, ${winRate.toFixed(1)}% WR`;
     heatmapPanel.appendChild(cell);
   });
+}
+
+function addIpcCleanup(cleanup) {
+  if (typeof cleanup === 'function') {
+    ipcCleanupCallbacks.push(cleanup);
+  }
 }
 
 function updateRecentResults(result) {
@@ -1708,8 +1720,14 @@ document.addEventListener('mousemove', (e) => {
   window.electronAPI.setIgnoreMouse(!inInteractiveArea);
 });
 
-window.electronAPI.onWindowPositionChanged((pos) => {
-  session.windowPos = pos;
+addIpcCleanup(
+  window.electronAPI.onWindowPositionChanged((pos) => {
+    session.windowPos = pos;
+  })
+);
+
+window.addEventListener('beforeunload', () => {
+  ipcCleanupCallbacks.splice(0).forEach((cleanup) => cleanup());
 });
 
 async function initSession(config) {
@@ -1871,21 +1889,27 @@ async function init() {
   startScreen.hidden = false;
   await resizeHudWindow(START_WINDOW_HEIGHT, DEFAULT_WINDOW_WIDTH);
   window.electronAPI.setIgnoreMouse(false);
-  window.electronAPI.onKbEntry(() => {
-    if (session.startedAt && !session.locked) {
-      onEntry();
-    }
-  });
-  window.electronAPI.onKbPass(() => {
-    if (session.startedAt && !session.locked) {
-      onPass();
-    }
-  });
-  window.electronAPI.onKbSl(() => {
-    if (session.startedAt && !session.locked) {
-      onSL();
-    }
-  });
+  addIpcCleanup(
+    window.electronAPI.onKbEntry(() => {
+      if (session.startedAt && !session.locked) {
+        onEntry();
+      }
+    })
+  );
+  addIpcCleanup(
+    window.electronAPI.onKbPass(() => {
+      if (session.startedAt && !session.locked) {
+        onPass();
+      }
+    })
+  );
+  addIpcCleanup(
+    window.electronAPI.onKbSl(() => {
+      if (session.startedAt && !session.locked) {
+        onSL();
+      }
+    })
+  );
   validateStartInputs();
   renderAll();
 }
