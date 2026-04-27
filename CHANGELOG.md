@@ -31,6 +31,20 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [0.16.0] - 2026-04-27
+
+### Added
+
+- Added quest completion tracking that writes completed quest IDs and claimed rewards to `quests_state.json`.
+- Added XP and coin payouts for newly completed mainline, side quest, and achievement definitions.
+- Added quest metric support for `sessions_with_sol_limit_lte` and `session_exports`.
+
+### Changed
+
+- Updated visible application version labels to `0.16.0`.
+
+---
+
 ## [0.15.2] - 2026-04-27
 
 ### Fixed
@@ -357,7 +371,8 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ---
 
-[Unreleased]: https://github.com/lotoos0/sol_hud/compare/v0.15.2...HEAD
+[Unreleased]: https://github.com/lotoos0/sol_hud/compare/v0.16.0...HEAD
+[0.16.0]: https://github.com/lotoos0/sol_hud/compare/v0.15.2...v0.16.0
 [0.15.2]: https://github.com/lotoos0/sol_hud/compare/v0.15.1...v0.15.2
 [0.15.1]: https://github.com/lotoos0/sol_hud/compare/v0.15.0...v0.15.1
 [0.15.0]: https://github.com/lotoos0/sol_hud/compare/v0.14.0...v0.15.0
