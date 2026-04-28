@@ -389,6 +389,14 @@
       "price": 180
     },
     {
+      "id": "border_prestige",
+      "category": "borders",
+      "name": "Prestige",
+      "preview": "◈",
+      "price": 0,
+      "prestige_required": 1
+    },
+    {
       "id": "sound_classic",
       "category": "sound_packs",
       "name": "Classic",
@@ -458,6 +466,14 @@
       "name": "GIGACHAD",
       "preview": "GG",
       "price": 250
+    },
+    {
+      "id": "title_chad_prestige",
+      "category": "titles",
+      "name": "GIGACHAD [P1]",
+      "preview": "GP",
+      "price": 0,
+      "prestige_required": 1
     }
   ]
 }

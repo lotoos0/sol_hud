@@ -337,6 +337,15 @@ body {
   color: var(--danger);
 }
 
+#prestige-badge {
+  flex: 0 0 auto;
+  color: #ffd700;
+  font-size: 10px;
+  font-weight: 900;
+  text-shadow: 0 0 6px rgba(255, 215, 0, 0.5);
+  white-space: nowrap;
+}
+
 .version-mini {
   flex: 0 0 32px;
   overflow: hidden;
@@ -531,6 +540,20 @@ button:hover {
   flex: 1;
 }
 
+#btn-prestige {
+  flex: 0 0 82px;
+  height: 24px;
+  padding: 0 6px;
+  color: #ffd700;
+  font-size: 9px;
+}
+
+#btn-prestige.is-danger {
+  border-color: var(--danger);
+  color: var(--danger);
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
 #opacity-slider {
   width: 128px;
   accent-color: var(--accent);
@@ -679,6 +702,8 @@ label,
 #history-panel,
 #vault-panel,
 #streak-display,
+#prestige-badge,
+#btn-prestige,
 #session-timer,
 #tilt-alert,
 #boss-fight-banner,
@@ -941,6 +966,15 @@ label,
   box-shadow: 0 0 10px rgba(0, 255, 136, 0.28);
 }
 
+.vault-item.is-prestige {
+  border-color: rgba(255, 215, 0, 0.78);
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.26);
+}
+
+.vault-item.is-prestige .vault-status {
+  color: #ffd700;
+}
+
 .vault-preview {
   min-height: 24px;
   font-size: 20px;
@@ -987,6 +1021,17 @@ label,
 
   50% {
     border-color: var(--danger);
+  }
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 rgba(255, 51, 102, 0);
+  }
+
+  50% {
+    box-shadow: 0 0 12px rgba(255, 51, 102, 0.45);
   }
 }
 
