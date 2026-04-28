@@ -1,5 +1,5 @@
 const PASSIVE_TIMEOUT = 5 * 60 * 1000;
-const APP_VERSION = '0.17.0';
+const APP_VERSION = '0.17.1';
 const RANK_TABLE = [
   { rank: 'Rookie', rank_level: 1, xp_required: 0, feature_unlock: 'basic_hud' },
   { rank: 'Scout', rank_level: 2, xp_required: 100, feature_unlock: 'session_history' },
@@ -506,6 +506,7 @@ async function applySessionRewards() {
   };
 
   const questsCompleted = completeEligibleQuests();
+  const unlockedAchievements = questsCompleted.filter((quest) => quest.type === 'achievement');
   const questRewards = questsCompleted.reduce(
     (totals, quest) => ({
       xp: totals.xp + (Number(quest.xp) || 0),
@@ -522,6 +523,10 @@ async function applySessionRewards() {
   if (syncPlayerRank()) {
     showToast(`RANK UP: ${playerData.rank}`);
   }
+
+  unlockedAchievements.forEach((achievement) => {
+    showToast(`ACHIEVEMENT: ${achievement.name}`);
+  });
 
   if (questsState) {
     await window.electronAPI.saveQuestsState(questsState);
@@ -1314,6 +1319,17 @@ function buildRecapHTML({ xpEarned, coinsEarned, questsCompleted, bossStatus }) 
   const bossCopy = bossStatus === 'defeated' ? '&#9876; DEFEATED' : '- no boss';
   const completedCopy =
     questsCompleted.length > 0 ? `${questsCompleted.length} completed` : 'tracking active';
+  const achievements = questsCompleted.filter((quest) => quest.type === 'achievement');
+  const achievementsHTML =
+    achievements.length > 0
+      ? `
+    <div class="quest-recap">
+      <div class="recap-subtitle">Achievements Unlocked</div>
+      <ul>${achievements
+        .map((achievement) => `<li class="is-complete"><span>&#10003; ${achievement.name}</span><strong>UNLOCKED</strong></li>`)
+        .join('')}</ul>
+    </div>`
+      : '';
 
   return `
     <h3>Daily Recap</h3>
@@ -1329,6 +1345,7 @@ function buildRecapHTML({ xpEarned, coinsEarned, questsCompleted, bossStatus }) 
       <div class="recap-subtitle">Quest Progress <span>${completedCopy}</span></div>
       <ul>${questList}</ul>
     </div>
+    ${achievementsHTML}
     <div class="summary-actions">
       <button id="btn-share" type="button">Share</button>
       <button id="btn-new-session" type="button">New Session</button>
