@@ -31,6 +31,16 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [0.17.1] - 2026-04-28
+
+### Changed
+
+- Added a dedicated recap section for newly unlocked achievements.
+- Added achievement unlock toasts for completed achievement rewards.
+- Updated visible application version labels to `0.17.1`.
+
+---
+
 ## [0.17.0] - 2026-04-27
 
 ### Added
@@ -385,7 +395,8 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ---
 
-[Unreleased]: https://github.com/lotoos0/sol_hud/compare/v0.17.0...HEAD
+[Unreleased]: https://github.com/lotoos0/sol_hud/compare/v0.17.1...HEAD
+[0.17.1]: https://github.com/lotoos0/sol_hud/compare/v0.17.0...v0.17.1
 [0.17.0]: https://github.com/lotoos0/sol_hud/compare/v0.16.0...v0.17.0
 [0.16.0]: https://github.com/lotoos0/sol_hud/compare/v0.15.2...v0.16.0
 [0.15.2]: https://github.com/lotoos0/sol_hud/compare/v0.15.1...v0.15.2
