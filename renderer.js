@@ -1,5 +1,5 @@
 const PASSIVE_TIMEOUT = 5 * 60 * 1000;
-const APP_VERSION = '0.19.0';
+const APP_VERSION = '0.20.0';
 const RANK_TABLE = [
   { rank: 'Rookie', rank_level: 1, xp_required: 0, feature_unlock: 'basic_hud' },
   { rank: 'Scout', rank_level: 2, xp_required: 100, feature_unlock: 'session_history' },
@@ -13,6 +13,12 @@ const XP_TABLE = {
   entry_4_4: 15,
   entry_3_4: 8,
   pass: 5,
+  close_tp_hit: 20,
+  close_early_profit: 10,
+  close_breakeven: 5,
+  close_early_loss: 3,
+  sl_valid: -2,
+  sl_impulse: -20,
   win_session: 30,
   no_passive_session: 20
 };
@@ -20,6 +26,11 @@ const COIN_TABLE = {
   pass_with_reason: 5,
   entry_4_4: 10,
   sl_logged: 3,
+  close_tp_hit: 10,
+  close_early_profit: 7,
+  close_breakeven: 5,
+  close_early_loss: 3,
+  close_sl: 2,
   session_no_tilt: 15,
   session_with_review: 8
 };
@@ -56,7 +67,9 @@ function createDefaultSession() {
     expanded: false,
     isComeback: false,
     rewardsApplied: false,
+    pendingCloseResult: null,
     recentResults: [],
+    recentCloseResults: [],
     tilt_events: [],
     activeBossFight: null,
     bossDefeated: false,
@@ -85,6 +98,7 @@ let questsState = null;
 let opacitySaveTimer = null;
 let activeVaultCategory = 'heart_skins';
 let prestigeConfirmTimer = null;
+let pendingCloseResult = null;
 const ipcCleanupCallbacks = [];
 
 const startScreen = document.getElementById('start-screen');
@@ -111,9 +125,13 @@ const historyButton = document.getElementById('btn-history');
 const historyPanel = document.getElementById('history-panel');
 const heatmapButton = document.getElementById('btn-heatmap');
 const heatmapPanel = document.getElementById('heatmap-panel');
+const actionButtons = document.querySelector('.action-buttons');
 const entryButton = document.getElementById('btn-entry');
 const passButton = document.getElementById('btn-pass');
+const closeButton = document.getElementById('btn-close');
 const slButton = document.getElementById('btn-sl');
+const closeResultSelect = document.getElementById('close-result-select');
+const closeReasonSelect = document.getElementById('close-reason-select');
 const endSessionButton = document.getElementById('btn-end-session');
 const summaryScreen = document.getElementById('summary-screen');
 const pnlInput = document.getElementById('pnl-input');
@@ -173,7 +191,7 @@ function getCheckedCount() {
   return Object.values(session.checklist).filter(Boolean).length;
 }
 
-function calcTradeXP(type, checkedCount) {
+function calcTradeXP(type, checkedCount, result, reason) {
   if (type === 'ENTRY') {
     if (checkedCount >= 4) {
       return { xp: XP_TABLE.entry_4_4, coins: COIN_TABLE.entry_4_4 };
@@ -188,8 +206,37 @@ function calcTradeXP(type, checkedCount) {
     return { xp: XP_TABLE.pass, coins: COIN_TABLE.pass_with_reason };
   }
 
+  if (type === 'CLOSE') {
+    const fearPenalty = reason === 'MANUAL_FEAR';
+
+    if (result === 'TP_HIT') {
+      return { xp: XP_TABLE.close_tp_hit, coins: COIN_TABLE.close_tp_hit };
+    }
+
+    if (result === 'EARLY_PROFIT') {
+      return {
+        xp: fearPenalty ? 0 : XP_TABLE.close_early_profit,
+        coins: fearPenalty ? 0 : COIN_TABLE.close_early_profit
+      };
+    }
+
+    if (result === 'BREAKEVEN') {
+      return {
+        xp: XP_TABLE.close_breakeven,
+        coins: fearPenalty ? 0 : COIN_TABLE.close_breakeven
+      };
+    }
+
+    if (result === 'EARLY_LOSS') {
+      return {
+        xp: XP_TABLE.close_early_loss,
+        coins: fearPenalty ? 0 : COIN_TABLE.close_early_loss
+      };
+    }
+  }
+
   if (type === 'SL') {
-    return { xp: 0, coins: COIN_TABLE.sl_logged };
+    return { xp: 0, coins: COIN_TABLE.close_sl };
   }
 
   return { xp: 0, coins: 0 };
@@ -198,11 +245,12 @@ function calcTradeXP(type, checkedCount) {
 function calcSessionXP(sessionSummary) {
   const wins = Number(sessionSummary.wins) || 0;
   const attempts = Number(sessionSummary.attempts) || 0;
+  const losses = Number(sessionSummary.losses) || 0;
   const passiveEvents = Number(sessionSummary.passiveEvents) || 0;
   let xp = 0;
   let coins = 0;
 
-  if (attempts > 0 && wins > attempts - wins) {
+  if (attempts > 0 && wins > losses) {
     xp += XP_TABLE.win_session;
     coins += COIN_TABLE.session_no_tilt;
   }
@@ -460,7 +508,12 @@ async function applySessionRewards() {
 
   const tradeRewards = session.trades.reduce(
     (totals, trade) => {
-      const reward = calcTradeXP(trade.type, Number(trade.checked_count) || 0);
+      const reward = calcTradeXP(
+        trade.type,
+        Number(trade.checked_count) || 0,
+        trade.result,
+        trade.reason
+      );
 
       return {
         xp: totals.xp + reward.xp,
@@ -472,6 +525,7 @@ async function applySessionRewards() {
   const sessionRewards = calcSessionXP({
     wins: session.wins,
     attempts: session.attempts,
+    losses: session.losses,
     passiveEvents: session.passiveEvents
   });
   const sessionMultiplier = session.isComeback ? 2 : 1;
@@ -815,15 +869,17 @@ function setVaultVisible(visible) {
 }
 
 function getHotColdState() {
-  if (session.recentResults.length < 3) {
+  const recentCloseResults = session.recentCloseResults.slice(-3);
+
+  if (recentCloseResults.length < 3) {
     return 'neutral';
   }
 
-  if (session.recentResults.every((result) => result === 'win')) {
+  if (recentCloseResults.every((result) => result === 'win')) {
     return 'hot';
   }
 
-  if (session.recentResults.every((result) => result === 'loss')) {
+  if (recentCloseResults.every((result) => result === 'loss')) {
     return 'cold';
   }
 
@@ -998,11 +1054,11 @@ function addIpcCleanup(cleanup) {
   }
 }
 
-function updateRecentResults(result) {
-  session.recentResults.push(result);
+function updateRecentCloseResults(result) {
+  session.recentCloseResults.push(result);
 
-  if (session.recentResults.length > 3) {
-    session.recentResults.shift();
+  if (session.recentCloseResults.length > 3) {
+    session.recentCloseResults.shift();
   }
 }
 
@@ -1346,7 +1402,18 @@ function getQuestMetricValue(metric) {
     session_exports: session.endedAt ? 1 : 0,
     locked_sessions: session.locked ? 1 : 0,
     contained_red_sessions: getBossMetric('contained_red_sessions'),
-    disciplined_session_streak: playerData?.streak || 0
+    disciplined_session_streak: playerData?.streak || 0,
+    tp_hits: session.trades.filter(
+      (trade) => trade.type === 'CLOSE' && trade.result === 'TP_HIT'
+    ).length,
+    early_profits: session.trades.filter(
+      (trade) => trade.type === 'CLOSE' && trade.result === 'EARLY_PROFIT'
+    ).length,
+    closes_total: session.trades.filter((trade) => trade.type === 'CLOSE').length,
+    closes_with_reason: session.trades.filter((trade) => {
+      return trade.type === 'CLOSE' && trade.reason && trade.reason !== 'MANUAL_FEAR';
+    }).length,
+    no_sl_in_session: session.slHits === 0 ? 1 : 0
   };
 
   return metrics[metric] ?? 0;
@@ -1754,7 +1821,42 @@ function checkEntryUnlock() {
 
   entryButton.disabled = session.locked || tiltLocked || checkedCount < 3;
   passButton.disabled = session.locked || tiltLocked;
+  closeButton.disabled = session.locked || tiltLocked;
   slButton.disabled = session.locked || tiltLocked;
+}
+
+function showCloseResultSelect() {
+  if (!session.startedAt || session.locked || Date.now() < tiltCooldownUntil) {
+    return;
+  }
+
+  setVaultVisible(false);
+  session.expanded = true;
+  hudContainer.classList.add('is-expanded');
+  expandedPanel.hidden = false;
+  miniBar.hidden = true;
+  actionButtons.hidden = true;
+  closeResultSelect.hidden = false;
+  closeReasonSelect.hidden = true;
+  pendingCloseResult = null;
+  session.pendingCloseResult = null;
+  resizeHudWindow(EXPANDED_WINDOW_HEIGHT);
+  window.electronAPI.setIgnoreMouse(false);
+}
+
+function showCloseReasonSelect(result) {
+  pendingCloseResult = result;
+  session.pendingCloseResult = result;
+  closeResultSelect.hidden = true;
+  closeReasonSelect.hidden = false;
+}
+
+function hideCloseOverlays() {
+  actionButtons.hidden = false;
+  closeResultSelect.hidden = true;
+  closeReasonSelect.hidden = true;
+  pendingCloseResult = null;
+  session.pendingCloseResult = null;
 }
 
 function resetChecklist() {
@@ -1772,7 +1874,9 @@ function lockSession() {
   session.locked = true;
   entryButton.disabled = true;
   passButton.disabled = true;
+  closeButton.disabled = true;
   slButton.disabled = true;
+  hideCloseOverlays();
   sessionOver.hidden = false;
   session.expanded = true;
   hudContainer.classList.add('is-expanded', 'is-locked');
@@ -1791,7 +1895,7 @@ function readPnlAmount() {
   return Math.abs(value);
 }
 
-function logTrade(type, pnlAmount = 0, checkedCount = 0) {
+function logTrade(type, pnlAmount = 0, checkedCount = 0, extra = {}) {
   if (!session.startedAt) {
     session.startedAt = new Date().toISOString();
   }
@@ -1804,7 +1908,8 @@ function logTrade(type, pnlAmount = 0, checkedCount = 0) {
     wins: session.wins,
     losses: session.losses,
     pnl_amount: pnlAmount,
-    checked_count: checkedCount
+    checked_count: checkedCount,
+    ...extra
   });
 }
 
@@ -1846,15 +1951,9 @@ async function onEntry() {
     return;
   }
 
-  session.attempts++;
-  session.wins++;
   const checkedCount = getCheckedCount();
-  const pnlAmount = readPnlAmount();
-  session.pnl_sol += pnlAmount;
-  logTrade('ENTRY', pnlAmount, checkedCount);
-  updateRecentResults('win');
+  logTrade('ENTRY', 0, checkedCount);
   playSound('entry');
-  pnlInput.value = '';
   resetChecklist();
   resetPassiveTimer();
   await handlePostAction();
@@ -1865,10 +1964,7 @@ async function onPass() {
     return;
   }
 
-  session.attempts++;
-  session.losses++;
   logTrade('PASS', 0, getCheckedCount());
-  updateRecentResults('loss');
   playSound('pass');
   resetChecklist();
   resetPassiveTimer();
@@ -1887,7 +1983,6 @@ async function onSL() {
   const pnlAmount = readPnlAmount();
   session.pnl_sol -= pnlAmount;
   logTrade('SL', pnlAmount, getCheckedCount());
-  updateRecentResults('loss');
   playSound('sl');
   pnlInput.value = '';
   resetChecklist();
@@ -1901,12 +1996,98 @@ async function onSL() {
   await handlePostAction();
 }
 
+async function onClose(result, reason) {
+  if (session.locked || !session.startedAt || Date.now() < tiltCooldownUntil) {
+    return;
+  }
+
+  const checkedCount = getCheckedCount();
+  const pnlAmount = readPnlAmount();
+  const isProfit = result === 'TP_HIT' || result === 'EARLY_PROFIT';
+  const isBreakeven = result === 'BREAKEVEN';
+  const pnlDirection = isProfit ? 'profit' : isBreakeven ? 'flat' : 'loss';
+
+  session.attempts++;
+
+  if (isProfit) {
+    session.wins++;
+    updateRecentCloseResults('win');
+  } else if (result === 'EARLY_LOSS') {
+    session.losses++;
+    updateRecentCloseResults('loss');
+  } else {
+    updateRecentCloseResults('neutral');
+  }
+
+  if (isProfit || isBreakeven) {
+    session.pnl_sol += pnlAmount;
+  } else {
+    session.pnl_sol -= pnlAmount;
+  }
+
+  logTrade('CLOSE', pnlAmount, checkedCount, {
+    result,
+    reason: reason || null,
+    process_valid: reason !== 'MANUAL_FEAR',
+    pnl_direction: pnlDirection,
+    checklist_complete: checkedCount >= 4,
+    lives_remaining: session.lives
+  });
+  playSound('close');
+  pnlInput.value = '';
+  resetChecklist();
+  resetPassiveTimer();
+  hideCloseOverlays();
+  await handlePostAction();
+}
+
+closeButton.addEventListener('click', () => {
+  if (!session.startedAt || session.locked) {
+    return;
+  }
+
+  if (!closeResultSelect.hidden || !closeReasonSelect.hidden) {
+    hideCloseOverlays();
+    return;
+  }
+
+  showCloseResultSelect();
+});
+
+closeResultSelect.addEventListener('click', (event) => {
+  const button = event.target.closest('[data-result]');
+
+  if (!button) {
+    return;
+  }
+
+  const result = button.dataset.result;
+
+  if (result === 'TP_HIT') {
+    onClose(result, null);
+    return;
+  }
+
+  showCloseReasonSelect(result);
+});
+
+closeReasonSelect.addEventListener('click', (event) => {
+  const button = event.target.closest('[data-reason]');
+
+  if (!button || !pendingCloseResult) {
+    return;
+  }
+
+  onClose(pendingCloseResult, button.dataset.reason);
+});
+
 expandButton.addEventListener('click', () => {
   if (!session.startedAt) {
     return;
   }
 
   setVaultVisible(false);
+  hideCloseOverlays();
   session.expanded = true;
   hudContainer.classList.add('is-expanded');
   expandedPanel.hidden = false;
@@ -1924,6 +2105,7 @@ collapseButton.addEventListener('click', () => {
   settingsPanel.hidden = true;
   heatmapPanel.hidden = true;
   historyPanel.hidden = true;
+  hideCloseOverlays();
   hudContainer.classList.remove('is-expanded');
   expandedPanel.hidden = true;
   miniBar.hidden = false;
@@ -1939,6 +2121,7 @@ settingsButton.addEventListener('click', () => {
   setVaultVisible(false);
   heatmapPanel.hidden = true;
   historyPanel.hidden = true;
+  hideCloseOverlays();
   settingsPanel.hidden = !settingsPanel.hidden;
   session.expanded = true;
   hudContainer.classList.add('is-expanded');
@@ -1955,6 +2138,7 @@ heatmapButton.addEventListener('click', async () => {
   setVaultVisible(false);
   settingsPanel.hidden = true;
   historyPanel.hidden = true;
+  hideCloseOverlays();
   session.expanded = true;
   hudContainer.classList.add('is-expanded');
   expandedPanel.hidden = false;
@@ -1984,6 +2168,7 @@ historyButton.addEventListener('click', async () => {
   setVaultVisible(false);
   settingsPanel.hidden = true;
   heatmapPanel.hidden = true;
+  hideCloseOverlays();
   session.expanded = true;
   hudContainer.classList.add('is-expanded');
   expandedPanel.hidden = false;
@@ -2026,6 +2211,7 @@ vaultButton.addEventListener('click', () => {
   }
 
   setVaultVisible(vaultPanel.hidden);
+  hideCloseOverlays();
 });
 
 vaultCloseButton.addEventListener('click', () => {
@@ -2127,6 +2313,7 @@ async function initSession(config) {
   heatmapPanel.hidden = true;
   historyPanel.hidden = true;
   vaultPanel.hidden = true;
+  hideCloseOverlays();
   comebackBanner.hidden = !session.isComeback;
   bossFightBanner.hidden = true;
   bossDefeatedToast.hidden = true;
@@ -2171,6 +2358,7 @@ async function showSummary() {
   session.locked = true;
   clearTimeout(passiveTimer);
   stopSessionTimer();
+  hideCloseOverlays();
   renderAll();
   await autoSave();
   const sessionRewards = await applySessionRewards();
@@ -2202,6 +2390,7 @@ function resetToStartScreen() {
   stopSessionTimer();
   clearTimeout(opacitySaveTimer);
   resetPrestigeButton();
+  hideCloseOverlays();
   summaryScreen.hidden = true;
   sessionOver.hidden = true;
   comebackBanner.hidden = true;
@@ -2260,6 +2449,7 @@ async function init() {
   settingsPanel.hidden = true;
   heatmapPanel.hidden = true;
   historyPanel.hidden = true;
+  hideCloseOverlays();
   comebackBanner.hidden = true;
   bossFightBanner.hidden = true;
   bossDefeatedToast.hidden = true;
@@ -2286,6 +2476,19 @@ async function init() {
     window.electronAPI.onKbSl(() => {
       if (session.startedAt && !session.locked) {
         onSL();
+      }
+    })
+  );
+  addIpcCleanup(
+    window.electronAPI.onKbClose(() => {
+      if (!session.startedAt || session.locked || Date.now() < tiltCooldownUntil) {
+        return;
+      }
+
+      if (closeResultSelect.hidden) {
+        showCloseResultSelect();
+      } else {
+        hideCloseOverlays();
       }
     })
   );

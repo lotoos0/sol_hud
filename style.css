@@ -694,6 +694,8 @@ label,
 .checklist,
 .pnl-input-row,
 .action-buttons,
+#close-result-select,
+#close-reason-select,
 #pnl-display,
 #session-over,
 #summary-screen,
@@ -720,9 +722,13 @@ label,
 #hud-container.is-locked .checklist,
 #hud-container.is-locked .pnl-input-row,
 #hud-container.is-locked .action-buttons,
+#hud-container.is-locked #close-result-select,
+#hud-container.is-locked #close-reason-select,
 #hud-container.is-summary .checklist,
 #hud-container.is-summary .pnl-input-row,
 #hud-container.is-summary .action-buttons,
+#hud-container.is-summary #close-result-select,
+#hud-container.is-summary #close-reason-select,
 #hud-container.is-summary .stats-grid {
   display: none;
 }
@@ -740,11 +746,13 @@ label,
 }
 
 #btn-pass,
+#btn-close,
 #btn-sl {
   border-color: rgba(255, 51, 102, 0.55);
 }
 
 #btn-pass:hover,
+#btn-close:hover,
 #btn-sl:hover {
   border-color: var(--danger);
   color: var(--danger);
@@ -756,9 +764,59 @@ label,
 }
 
 #btn-pass:disabled,
+#btn-close:disabled,
 #btn-sl:disabled {
   opacity: 0.3;
   cursor: not-allowed;
+}
+
+#close-result-select {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+#close-result-select[hidden],
+#close-reason-select[hidden] {
+  display: none;
+}
+
+#close-result-select button {
+  width: 100%;
+  min-height: 30px;
+  padding: 0 6px;
+  border-color: rgba(0, 255, 136, 0.7);
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+#close-result-select button[data-result="BREAKEVEN"] {
+  border-color: rgba(255, 204, 0, 0.75);
+  color: #ffcc00;
+}
+
+#close-result-select button[data-result="EARLY_LOSS"] {
+  border-color: rgba(255, 153, 51, 0.75);
+  color: #ff9933;
+}
+
+#close-reason-select {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 8px;
+}
+
+#close-reason-select button {
+  flex: 1 1 70px;
+  min-height: 24px;
+  padding: 0 5px;
+  border-color: rgba(0, 255, 136, 0.4);
+  color: rgba(255, 255, 255, 0.86);
+  font-size: 9px;
+  font-weight: 800;
 }
 
 #btn-end-session {

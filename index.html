@@ -13,7 +13,7 @@
       <div id="tilt-alert" hidden></div>
       <div id="boss-defeated-toast" hidden>BOSS DEFEATED 🏆</div>
       <div id="start-screen">
-        <div class="version-badge">v0.19.0 MVP</div>
+        <div class="version-badge">v0.20.0 MVP</div>
         <h2>SOL TRADER HUD</h2>
         <label>
           Lives (1-5):
@@ -39,7 +39,7 @@
           <button id="btn-vault" type="button">Vault</button>
           <button id="btn-settings" type="button" aria-label="Settings">&#9881;</button>
           <span id="prestige-badge" hidden></span>
-          <div class="version-mini">v0.19.0</div>
+          <div class="version-mini">v0.20.0</div>
           <button id="btn-expand" type="button" aria-label="Expand">≡</button>
         </div>
 
@@ -68,7 +68,7 @@
             <div id="session-timer" hidden>00:00:00</div>
             <button id="btn-history" type="button" hidden>Hist</button>
             <button id="btn-heatmap" type="button" hidden>24h</button>
-            <div class="version-mini">v0.19.0 MVP</div>
+            <div class="version-mini">v0.20.0 MVP</div>
             <button id="btn-collapse" type="button" aria-label="Collapse">×</button>
           </div>
 
@@ -128,7 +128,25 @@
           <div class="action-buttons">
             <button id="btn-entry" type="button">✅ ENTRY</button>
             <button id="btn-pass" type="button">❌ PASS</button>
+            <button id="btn-close" type="button">📤 CLOSE</button>
             <button id="btn-sl" type="button">💀 SL</button>
+          </div>
+
+          <div id="close-result-select" hidden>
+            <button type="button" data-result="TP_HIT">🎯 TP HIT</button>
+            <button type="button" data-result="EARLY_PROFIT">📈 EARLY PROFIT</button>
+            <button type="button" data-result="BREAKEVEN">⚖️ BREAKEVEN</button>
+            <button type="button" data-result="EARLY_LOSS">📉 EARLY LOSS</button>
+          </div>
+
+          <div id="close-reason-select" hidden>
+            <button type="button" data-reason="STRUCTURE_BREAK">STRUCTURE</button>
+            <button type="button" data-reason="NO_CONTINUATION">NO CONT.</button>
+            <button type="button" data-reason="VOLUME_DIED">VOL DIED</button>
+            <button type="button" data-reason="HOLDER_DUMP">DUMP</button>
+            <button type="button" data-reason="DEV_RISK">DEV RISK</button>
+            <button type="button" data-reason="MANUAL_FEAR">FEAR</button>
+            <button type="button" data-reason="OTHER">OTHER</button>
           </div>
 
           <button id="btn-end-session" type="button">End Session</button>
