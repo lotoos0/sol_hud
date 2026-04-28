@@ -31,6 +31,22 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [0.19.0] - 2026-04-28
+
+### Added
+
+- Added prestige count to player state and player shape normalization.
+- Added GIGACHAD prestige reset flow with two-step confirmation.
+- Added prestige badge display in the mini HUD.
+- Added prestige-only border and title cosmetics.
+
+### Changed
+
+- Updated Vault rendering for prestige-only cosmetics.
+- Updated visible application version labels to `0.19.0`.
+
+---
+
 ## [0.18.0] - 2026-04-28
 
 ### Added
@@ -408,7 +424,8 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ---
 
-[Unreleased]: https://github.com/lotoos0/sol_hud/compare/v0.18.0...HEAD
+[Unreleased]: https://github.com/lotoos0/sol_hud/compare/v0.19.0...HEAD
+[0.19.0]: https://github.com/lotoos0/sol_hud/compare/v0.18.0...v0.19.0
 [0.18.0]: https://github.com/lotoos0/sol_hud/compare/v0.17.1...v0.18.0
 [0.17.1]: https://github.com/lotoos0/sol_hud/compare/v0.17.0...v0.17.1
 [0.17.0]: https://github.com/lotoos0/sol_hud/compare/v0.16.0...v0.17.0

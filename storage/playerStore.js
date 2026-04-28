@@ -28,6 +28,7 @@ function getDefaultPlayer() {
     name: 'Player',
     level: 1,
     xp: 0,
+    prestige_count: 0,
     rank: 'rookie',
     streak: {
       current: 0,

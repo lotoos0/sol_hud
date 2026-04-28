@@ -1,5 +1,5 @@
 const PASSIVE_TIMEOUT = 5 * 60 * 1000;
-const APP_VERSION = '0.18.0';
+const APP_VERSION = '0.19.0';
 const RANK_TABLE = [
   { rank: 'Rookie', rank_level: 1, xp_required: 0, feature_unlock: 'basic_hud' },
   { rank: 'Scout', rank_level: 2, xp_required: 100, feature_unlock: 'session_history' },
@@ -36,6 +36,7 @@ const HEART_SLOT_WIDTH = 21;
 const LIVES_SLOT_PADDING = 14;
 const MINI_BAR_SAFETY_WIDTH = 36;
 const STREAK_SLOT_WIDTH = 26;
+const PRESTIGE_SLOT_WIDTH = 22;
 const DEFAULT_HEART_FULL = '\u2764\uFE0F';
 let HEART_FULL = DEFAULT_HEART_FULL;
 const HEART_EMPTY = '\uD83D\uDDA4';
@@ -83,6 +84,7 @@ let questDefs = null;
 let questsState = null;
 let opacitySaveTimer = null;
 let activeVaultCategory = 'heart_skins';
+let prestigeConfirmTimer = null;
 const ipcCleanupCallbacks = [];
 
 const startScreen = document.getElementById('start-screen');
@@ -98,6 +100,8 @@ const settingsButton = document.getElementById('btn-settings');
 const settingsPanel = document.getElementById('settings-panel');
 const opacitySlider = document.getElementById('opacity-slider');
 const opacityValue = document.getElementById('opacity-value');
+const prestigeButton = document.getElementById('btn-prestige');
+const prestigeBadge = document.getElementById('prestige-badge');
 const vaultButton = document.getElementById('btn-vault');
 const vaultPanel = document.getElementById('vault-panel');
 const vaultCloseButton = document.getElementById('btn-vault-close');
@@ -327,8 +331,9 @@ function getLivesSlotWidth() {
 function getResponsiveWindowWidth() {
   const livesOverflow = Math.max(0, getLivesSlotWidth() - DEFAULT_LIVES_SLOT_WIDTH);
   const streakWidth = playerData && playerData.rank_level >= 3 ? STREAK_SLOT_WIDTH : 0;
+  const prestigeWidth = playerData && playerData.prestige_count > 0 ? PRESTIGE_SLOT_WIDTH : 0;
 
-  return DEFAULT_WINDOW_WIDTH + livesOverflow + streakWidth + MINI_BAR_SAFETY_WIDTH;
+  return DEFAULT_WINDOW_WIDTH + livesOverflow + streakWidth + prestigeWidth + MINI_BAR_SAFETY_WIDTH;
 }
 
 function applyResponsiveLayout() {
@@ -348,6 +353,7 @@ function ensurePlayerShape(player) {
 
   player.xp = Number(player.xp) || 0;
   player.coins = Number(player.coins) || 0;
+  player.prestige_count = Number(player.prestige_count) || 0;
   player.rank = player.rank || rank.rank;
   player.rank_level = Number(player.rank_level) || Number(player.level) || rank.rank_level;
   player.level = Number(player.level) || rank.rank_level;
@@ -614,6 +620,10 @@ function isCosmeticUnlocked(item) {
   return (playerData?.[getUnlockedKey(item.category)] || []).includes(item.id);
 }
 
+function hasPrestigeAccess(item) {
+  return Number(playerData?.prestige_count) >= Number(item.prestige_required || 0);
+}
+
 function applyCosmetics() {
   if (!playerData || !hudContainer) {
     return;
@@ -635,6 +645,62 @@ function applyCosmetics() {
   renderHearts();
 }
 
+function canPrestige() {
+  return playerData?.rank_level >= 7;
+}
+
+function unlockPrestigeItem(key, itemId) {
+  const current = Array.isArray(playerData[key]) ? playerData[key] : [];
+
+  if (!current.includes(itemId)) {
+    playerData[key] = [...current, itemId];
+  }
+}
+
+function resetPrestigeButton() {
+  clearTimeout(prestigeConfirmTimer);
+  prestigeConfirmTimer = null;
+
+  if (!prestigeButton) {
+    return;
+  }
+
+  prestigeButton.textContent = 'PRESTIGE';
+  prestigeButton.classList.remove('is-danger');
+}
+
+async function doPrestige() {
+  if (!canPrestige()) {
+    return;
+  }
+
+  playerData.prestige_count++;
+  playerData.xp = 0;
+  syncPlayerRank();
+  unlockPrestigeItem('unlocked_borders', 'border_prestige');
+  unlockPrestigeItem('unlocked_titles', 'title_chad_prestige');
+  await window.electronAPI.savePlayer(playerData);
+  showToast(`PRESTIGE [P${playerData.prestige_count}] - Back to zero`);
+  resetPrestigeButton();
+  renderAll();
+}
+
+function renderPrestigeUI() {
+  if (prestigeBadge) {
+    const count = Number(playerData?.prestige_count) || 0;
+    prestigeBadge.hidden = count <= 0;
+    prestigeBadge.textContent = count > 0 ? `P${count}` : '';
+  }
+
+  if (prestigeButton) {
+    prestigeButton.hidden = !canPrestige();
+
+    if (!canPrestige()) {
+      resetPrestigeButton();
+    }
+  }
+}
+
 function renderVault(category = activeVaultCategory) {
   if (!vaultGrid || !vaultTabs || !playerData) {
     return;
@@ -651,22 +717,32 @@ function renderVault(category = activeVaultCategory) {
     .map((item) => {
       const unlocked = isCosmeticUnlocked(item);
       const active = playerData[getActiveKey(item.category)] === item.id;
-      const status = active ? 'ACTIVE' : unlocked ? 'OWNED' : `LOCKED - ${item.price} coins`;
+      const prestigeLocked = Boolean(item.prestige_required) && !hasPrestigeAccess(item);
+      const status = active
+        ? 'ACTIVE'
+        : unlocked
+          ? 'OWNED'
+          : item.prestige_required
+            ? 'PRESTIGE ONLY'
+            : `LOCKED - ${item.price} coins`;
       const actionLabel = active ? 'Active' : unlocked ? 'Equip' : 'Buy';
       const action = unlocked ? 'equip' : 'purchase';
-      const disabled = active ? ' disabled' : '';
+      const disabled = active || prestigeLocked ? ' disabled' : '';
+      const actionButton = prestigeLocked
+        ? ''
+        : `<button type="button" data-action="${action}" data-id="${item.id}"${disabled}>${actionLabel}</button>`;
       const previewButton =
         item.category === 'sound_packs'
           ? `<button type="button" data-action="preview-sound" data-id="${item.id}" aria-label="Preview ${item.name}">▶</button>`
           : '';
 
       return `
-        <div class="vault-item ${unlocked ? 'is-owned' : 'is-locked'} ${active ? 'is-active' : ''}">
+        <div class="vault-item ${unlocked ? 'is-owned' : 'is-locked'} ${active ? 'is-active' : ''} ${item.prestige_required ? 'is-prestige' : ''}">
           <div class="vault-preview">${item.preview || ''}</div>
           <div class="vault-name">${item.name}</div>
           <div class="vault-status">${status}</div>
           <div class="vault-actions">
-            <button type="button" data-action="${action}" data-id="${item.id}"${disabled}>${actionLabel}</button>
+            ${actionButton}
             ${previewButton}
           </div>
         </div>
@@ -678,7 +754,13 @@ function renderVault(category = activeVaultCategory) {
 async function onPurchaseItem(itemId) {
   const item = getCosmeticItem(itemId);
 
-  if (!item || !playerData || isCosmeticUnlocked(item) || playerData.coins < item.price) {
+  if (
+    !item ||
+    !playerData ||
+    isCosmeticUnlocked(item) ||
+    !hasPrestigeAccess(item) ||
+    playerData.coins < item.price
+  ) {
     renderVault();
     return;
   }
@@ -1752,6 +1834,7 @@ function renderAll() {
   renderStreak();
   renderHeatmapButton();
   renderHistoryButton();
+  renderPrestigeUI();
 
   if (session.locked) {
     lockSession();
@@ -1922,6 +2005,21 @@ opacitySlider.addEventListener('input', () => {
   scheduleOpacitySave(value);
 });
 
+prestigeButton.addEventListener('click', async () => {
+  if (!canPrestige()) {
+    return;
+  }
+
+  if (prestigeConfirmTimer) {
+    await doPrestige();
+    return;
+  }
+
+  prestigeButton.textContent = 'CONFIRM PRESTIGE';
+  prestigeButton.classList.add('is-danger');
+  prestigeConfirmTimer = setTimeout(resetPrestigeButton, 5000);
+});
+
 vaultButton.addEventListener('click', () => {
   if (!playerData) {
     return;
@@ -2085,6 +2183,7 @@ async function showSummary() {
   settingsPanel.hidden = true;
   heatmapPanel.hidden = true;
   historyPanel.hidden = true;
+  resetPrestigeButton();
   setVaultVisible(false);
   endSessionButton.hidden = true;
   session.expanded = true;
@@ -2102,6 +2201,7 @@ function resetToStartScreen() {
   clearTimeout(passiveTimer);
   stopSessionTimer();
   clearTimeout(opacitySaveTimer);
+  resetPrestigeButton();
   summaryScreen.hidden = true;
   sessionOver.hidden = true;
   comebackBanner.hidden = true;
