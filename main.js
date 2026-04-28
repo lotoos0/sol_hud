@@ -216,9 +216,11 @@ function createWindow() {
   globalShortcut.unregister('Alt+E');
   globalShortcut.unregister('Alt+P');
   globalShortcut.unregister('Alt+S');
+  globalShortcut.unregister('Alt+C');
   globalShortcut.register('Alt+E', () => win.webContents.send('kb-entry'));
   globalShortcut.register('Alt+P', () => win.webContents.send('kb-pass'));
   globalShortcut.register('Alt+S', () => win.webContents.send('kb-sl'));
+  globalShortcut.register('Alt+C', () => win.webContents.send('kb-close'));
 
   if (!app.isPackaged) {
     win.webContents.openDevTools();

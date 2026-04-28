@@ -39,6 +39,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onKbSl: (callback) => {
     return subscribe('kb-sl', callback);
   },
+  onKbClose: (callback) => {
+    return subscribe('kb-close', callback);
+  },
   onWindowPositionChanged: (callback) => {
     return subscribe('window-position-changed', callback);
   },

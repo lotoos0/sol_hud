@@ -31,6 +31,23 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [0.20.0] - 2026-04-28
+
+### Added
+
+- Added the CLOSE trade flow with result and reason quick-select controls.
+- Added CLOSE trade attribution for TP hit, early profit, breakeven, and early loss outcomes.
+- Added close-result trade metadata for rewards, quest metrics, and saved session JSON.
+- Added a global `C` shortcut to toggle the close result selector.
+
+### Changed
+
+- Changed session attempts, wins, and losses to represent closed trades instead of ENTRY/PASS actions.
+- Changed hot/cold session borders to use recent CLOSE outcomes.
+- Updated visible application version labels to `0.20.0`.
+
+---
+
 ## [0.19.0] - 2026-04-28
 
 ### Added
@@ -424,7 +441,8 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ---
 
-[Unreleased]: https://github.com/lotoos0/sol_hud/compare/v0.19.0...HEAD
+[Unreleased]: https://github.com/lotoos0/sol_hud/compare/v0.20.0...HEAD
+[0.20.0]: https://github.com/lotoos0/sol_hud/compare/v0.19.0...v0.20.0
 [0.19.0]: https://github.com/lotoos0/sol_hud/compare/v0.18.0...v0.19.0
 [0.18.0]: https://github.com/lotoos0/sol_hud/compare/v0.17.1...v0.18.0
 [0.17.1]: https://github.com/lotoos0/sol_hud/compare/v0.17.0...v0.17.1
