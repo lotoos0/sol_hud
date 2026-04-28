@@ -31,6 +31,19 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [0.18.0] - 2026-04-28
+
+### Added
+
+- Added Scout-rank session history panel with the latest 10 saved sessions.
+- Added safe `load-session` IPC bridge for reading individual session JSON files.
+
+### Changed
+
+- Updated visible application version labels to `0.18.0`.
+
+---
+
 ## [0.17.1] - 2026-04-28
 
 ### Changed
@@ -395,7 +408,8 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ---
 
-[Unreleased]: https://github.com/lotoos0/sol_hud/compare/v0.17.1...HEAD
+[Unreleased]: https://github.com/lotoos0/sol_hud/compare/v0.18.0...HEAD
+[0.18.0]: https://github.com/lotoos0/sol_hud/compare/v0.17.1...v0.18.0
 [0.17.1]: https://github.com/lotoos0/sol_hud/compare/v0.17.0...v0.17.1
 [0.17.0]: https://github.com/lotoos0/sol_hud/compare/v0.16.0...v0.17.0
 [0.16.0]: https://github.com/lotoos0/sol_hud/compare/v0.15.2...v0.16.0

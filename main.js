@@ -311,6 +311,14 @@ app.whenReady().then(() => {
       .map((file) => path.basename(file, '.json'));
   });
 
+  ipcMain.handle('load-session', (_event, sessionId) => {
+    ensureSessionsDir();
+    const safeSessionId = String(sessionId || '').replace(/[^a-zA-Z0-9_-]/g, '');
+    const file = path.join(getSessionsDir(), `${safeSessionId}.json`);
+
+    return JSON.parse(fs.readFileSync(file, 'utf8'));
+  });
+
   ipcMain.handle('open-sessions-folder', () => {
     ensureSessionsDir();
 
