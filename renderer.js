@@ -67,7 +67,6 @@ function createDefaultSession() {
     expanded: false,
     isComeback: false,
     rewardsApplied: false,
-    pendingCloseResult: null,
     recentResults: [],
     recentCloseResults: [],
     tilt_events: [],
@@ -1839,14 +1838,12 @@ function showCloseResultSelect() {
   closeResultSelect.hidden = false;
   closeReasonSelect.hidden = true;
   pendingCloseResult = null;
-  session.pendingCloseResult = null;
   resizeHudWindow(EXPANDED_WINDOW_HEIGHT);
   window.electronAPI.setIgnoreMouse(false);
 }
 
 function showCloseReasonSelect(result) {
   pendingCloseResult = result;
-  session.pendingCloseResult = result;
   closeResultSelect.hidden = true;
   closeReasonSelect.hidden = false;
 }
@@ -1856,7 +1853,6 @@ function hideCloseOverlays() {
   closeResultSelect.hidden = true;
   closeReasonSelect.hidden = true;
   pendingCloseResult = null;
-  session.pendingCloseResult = null;
 }
 
 function resetChecklist() {
