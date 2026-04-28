@@ -1,5 +1,5 @@
 const PASSIVE_TIMEOUT = 5 * 60 * 1000;
-const APP_VERSION = '0.17.1';
+const APP_VERSION = '0.18.0';
 const RANK_TABLE = [
   { rank: 'Rookie', rank_level: 1, xp_required: 0, feature_unlock: 'basic_hud' },
   { rank: 'Scout', rank_level: 2, xp_required: 100, feature_unlock: 'session_history' },
@@ -103,6 +103,8 @@ const vaultPanel = document.getElementById('vault-panel');
 const vaultCloseButton = document.getElementById('btn-vault-close');
 const vaultTabs = document.getElementById('vault-tabs');
 const vaultGrid = document.getElementById('vault-grid');
+const historyButton = document.getElementById('btn-history');
+const historyPanel = document.getElementById('history-panel');
 const heatmapButton = document.getElementById('btn-heatmap');
 const heatmapPanel = document.getElementById('heatmap-panel');
 const entryButton = document.getElementById('btn-entry');
@@ -712,6 +714,7 @@ function setVaultVisible(visible) {
 
   if (visible) {
     heatmapPanel.hidden = true;
+    historyPanel.hidden = true;
     renderVault();
     hudContainer.hidden = false;
     session.expanded = false;
@@ -785,6 +788,19 @@ function renderHeatmapButton() {
   }
 }
 
+function renderHistoryButton() {
+  if (!historyButton) {
+    return;
+  }
+
+  const unlocked = hasRankLevel(2);
+  historyButton.hidden = !unlocked;
+
+  if (!unlocked && historyPanel) {
+    historyPanel.hidden = true;
+  }
+}
+
 function interpolateHeatmapColor(winRate) {
   const red = [255, 51, 102];
   const green = [0, 255, 136];
@@ -829,6 +845,69 @@ function renderHeatmap(data) {
     cell.dataset.tooltip = `${trades} trades, W:${wins} L:${losses} SL:${sl}, ${winRate.toFixed(1)}% WR`;
     heatmapPanel.appendChild(cell);
   });
+}
+
+function formatHistoryDate(sessionData) {
+  const rawDate = sessionData.ended_at || sessionData.started_at || sessionData.session_id || '';
+  const date = new Date(rawDate);
+
+  if (Number.isNaN(date.getTime())) {
+    return String(sessionData.session_id || '-').slice(0, 10);
+  }
+
+  return date.toISOString().slice(0, 10);
+}
+
+function renderHistoryRows(sessionRows) {
+  if (!historyPanel) {
+    return;
+  }
+
+  if (sessionRows.length === 0) {
+    historyPanel.innerHTML = '<div class="history-empty">No saved sessions</div>';
+    return;
+  }
+
+  historyPanel.innerHTML = sessionRows
+    .map((sessionData) => {
+      const summary = sessionData.summary || {};
+      const wins = Number(summary.wins) || 0;
+      const losses = Number(summary.losses) || 0;
+      const winRate = Number(summary.win_rate) || 0;
+      const pnl = Number(summary.pnl_sol) || 0;
+      const pnlClass = pnl >= 0 ? 'pnl-positive' : 'pnl-negative';
+
+      return `
+        <div class="history-row">
+          <span>${formatHistoryDate(sessionData)}</span>
+          <span>W${wins} L${losses}</span>
+          <span>${winRate.toFixed(1)}%</span>
+          <strong class="${pnlClass}">${pnl.toFixed(3)} SOL</strong>
+        </div>
+      `;
+    })
+    .join('');
+}
+
+async function renderHistoryPanel() {
+  if (!historyPanel) {
+    return;
+  }
+
+  historyPanel.innerHTML = '<div class="history-empty">Loading...</div>';
+
+  try {
+    const sessionIds = await window.electronAPI.getSessionIds();
+    const recentIds = [...sessionIds].sort().slice(-10).reverse();
+    const sessionRows = await Promise.all(
+      recentIds.map((id) => window.electronAPI.loadSession(id))
+    );
+
+    renderHistoryRows(sessionRows);
+  } catch (error) {
+    console.error('History load failed:', error);
+    historyPanel.innerHTML = '<div class="history-empty">History unavailable</div>';
+  }
 }
 
 function addIpcCleanup(cleanup) {
@@ -1672,6 +1751,7 @@ function renderAll() {
   renderHotCold();
   renderStreak();
   renderHeatmapButton();
+  renderHistoryButton();
 
   if (session.locked) {
     lockSession();
@@ -1760,6 +1840,7 @@ collapseButton.addEventListener('click', () => {
   session.expanded = false;
   settingsPanel.hidden = true;
   heatmapPanel.hidden = true;
+  historyPanel.hidden = true;
   hudContainer.classList.remove('is-expanded');
   expandedPanel.hidden = true;
   miniBar.hidden = false;
@@ -1774,6 +1855,7 @@ settingsButton.addEventListener('click', () => {
 
   setVaultVisible(false);
   heatmapPanel.hidden = true;
+  historyPanel.hidden = true;
   settingsPanel.hidden = !settingsPanel.hidden;
   session.expanded = true;
   hudContainer.classList.add('is-expanded');
@@ -1789,6 +1871,7 @@ heatmapButton.addEventListener('click', async () => {
 
   setVaultVisible(false);
   settingsPanel.hidden = true;
+  historyPanel.hidden = true;
   session.expanded = true;
   hudContainer.classList.add('is-expanded');
   expandedPanel.hidden = false;
@@ -1805,6 +1888,29 @@ heatmapButton.addEventListener('click', async () => {
     }
   } else {
     heatmapPanel.hidden = true;
+  }
+
+  resizeHudWindow(EXPANDED_WINDOW_HEIGHT);
+});
+
+historyButton.addEventListener('click', async () => {
+  if (!session.startedAt || !hasRankLevel(2)) {
+    return;
+  }
+
+  setVaultVisible(false);
+  settingsPanel.hidden = true;
+  heatmapPanel.hidden = true;
+  session.expanded = true;
+  hudContainer.classList.add('is-expanded');
+  expandedPanel.hidden = false;
+  miniBar.hidden = true;
+
+  if (historyPanel.hidden) {
+    historyPanel.hidden = false;
+    await renderHistoryPanel();
+  } else {
+    historyPanel.hidden = true;
   }
 
   resizeHudWindow(EXPANDED_WINDOW_HEIGHT);
@@ -1921,6 +2027,7 @@ async function initSession(config) {
   summaryScreen.innerHTML = '';
   settingsPanel.hidden = true;
   heatmapPanel.hidden = true;
+  historyPanel.hidden = true;
   vaultPanel.hidden = true;
   comebackBanner.hidden = !session.isComeback;
   bossFightBanner.hidden = true;
@@ -1977,6 +2084,7 @@ async function showSummary() {
   bossFightBanner.hidden = true;
   settingsPanel.hidden = true;
   heatmapPanel.hidden = true;
+  historyPanel.hidden = true;
   setVaultVisible(false);
   endSessionButton.hidden = true;
   session.expanded = true;
@@ -2000,6 +2108,7 @@ function resetToStartScreen() {
   bossFightBanner.hidden = true;
   settingsPanel.hidden = true;
   heatmapPanel.hidden = true;
+  historyPanel.hidden = true;
   vaultPanel.hidden = true;
   bossDefeatedToast.hidden = true;
   shareToast.hidden = true;
@@ -2050,6 +2159,7 @@ async function init() {
   vaultPanel.hidden = true;
   settingsPanel.hidden = true;
   heatmapPanel.hidden = true;
+  historyPanel.hidden = true;
   comebackBanner.hidden = true;
   bossFightBanner.hidden = true;
   bossDefeatedToast.hidden = true;

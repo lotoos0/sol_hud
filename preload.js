@@ -28,6 +28,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   savePosition: (pos) => ipcRenderer.invoke('save-position', pos),
   getSessionsDir: () => ipcRenderer.invoke('get-sessions-dir'),
   getSessionIds: () => ipcRenderer.invoke('get-session-ids'),
+  loadSession: (id) => ipcRenderer.invoke('load-session', id),
   openSessionsFolder: () => ipcRenderer.invoke('open-sessions-folder'),
   onKbEntry: (callback) => {
     return subscribe('kb-entry', callback);
