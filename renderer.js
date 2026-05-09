@@ -1,5 +1,5 @@
 const PASSIVE_TIMEOUT = 5 * 60 * 1000;
-const APP_VERSION = '0.20.0';
+let APP_VERSION = '';
 const RANK_TABLE = [
   { rank: 'Rookie', rank_level: 1, xp_required: 0, feature_unlock: 'basic_hud' },
   { rank: 'Scout', rank_level: 2, xp_required: 100, feature_unlock: 'session_history' },
@@ -137,6 +137,7 @@ const pnlInput = document.getElementById('pnl-input');
 const pnlDisplay = document.getElementById('pnl-display');
 const statsMini = document.querySelector('.stats-mini');
 const streakDisplay = document.getElementById('streak-display');
+const versionLabels = Array.from(document.querySelectorAll('[data-app-version]'));
 const sessionTimer = document.getElementById('session-timer');
 const tiltAlert = document.getElementById('tilt-alert');
 const bossFightBanner = document.getElementById('boss-fight-banner');
@@ -892,8 +893,19 @@ function renderHotCold() {
   hudContainer.classList.toggle('cold-border', state === 'cold');
 }
 
+function renderAppVersion(version) {
+  APP_VERSION = String(version || '').trim() || '0.0.0';
+  versionLabels.forEach((label) => {
+    label.textContent = APP_VERSION;
+  });
+}
+
 function renderStreak() {
-  if (!streakDisplay || !playerData || playerData.rank_level < 3) {
+  if (!streakDisplay) {
+    return;
+  }
+
+  if (!playerData || playerData.rank_level < 3) {
     streakDisplay.hidden = true;
     return;
   }
@@ -2427,6 +2439,13 @@ function resetToStartScreen() {
 });
 
 async function init() {
+  try {
+    renderAppVersion(await window.electronAPI.getAppVersion());
+  } catch (error) {
+    console.error('Version load failed:', error);
+    renderAppVersion();
+  }
+
   try {
     session.windowPos = await window.electronAPI.loadLastPosition();
   } catch {
