@@ -231,6 +231,10 @@ app.whenReady().then(() => {
   playerStore.init(getDataDir());
   questStore.init(getDataDir());
 
+  ipcMain.handle('get-app-version', () => {
+    return app.getVersion();
+  });
+
   ipcMain.handle('resize-window', (_event, size) => {
     if (win) {
       const nextSize =
