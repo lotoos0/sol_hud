@@ -7,6 +7,8 @@ const questStore = require('./storage/questStore');
 
 let win;
 let updaterWin;
+let positionSaveTimer = null;
+let pendingWindowPosition = null;
 
 function getDataDir() {
   return app.isPackaged ? app.getPath('userData') : __dirname;
@@ -22,6 +24,23 @@ function getPositionFile() {
 
 function ensureSessionsDir() {
   fs.mkdirSync(getSessionsDir(), { recursive: true });
+}
+
+function writeFileAtomic(file, contents) {
+  const tempFile = `${file}.${process.pid}.${Date.now()}.tmp`;
+
+  try {
+    fs.writeFileSync(tempFile, contents);
+    fs.renameSync(tempFile, file);
+  } catch (error) {
+    try {
+      fs.unlinkSync(tempFile);
+    } catch {
+      // Best-effort cleanup only.
+    }
+
+    throw error;
+  }
 }
 
 function createEmptyHeatmapBuckets() {
@@ -112,7 +131,29 @@ function loadWindowPosition() {
 
 function saveWindowPosition(pos) {
   ensureSessionsDir();
-  fs.writeFileSync(getPositionFile(), JSON.stringify(pos));
+  writeFileAtomic(getPositionFile(), JSON.stringify(pos));
+}
+
+function scheduleWindowPositionSave(pos) {
+  pendingWindowPosition = pos;
+  clearTimeout(positionSaveTimer);
+
+  positionSaveTimer = setTimeout(() => {
+    saveWindowPosition(pendingWindowPosition);
+    pendingWindowPosition = null;
+    positionSaveTimer = null;
+  }, 300);
+}
+
+function flushWindowPositionSave() {
+  if (!pendingWindowPosition) {
+    return;
+  }
+
+  clearTimeout(positionSaveTimer);
+  saveWindowPosition(pendingWindowPosition);
+  pendingWindowPosition = null;
+  positionSaveTimer = null;
 }
 
 function createUpdaterWindow() {
@@ -208,9 +249,11 @@ function createWindow() {
   win.on('move', () => {
     const [x, y] = win.getPosition();
     const nextPos = { x, y };
-    saveWindowPosition(nextPos);
+    scheduleWindowPositionSave(nextPos);
     win.webContents.send('window-position-changed', nextPos);
   });
+
+  win.on('close', flushWindowPositionSave);
 
   win.loadFile('index.html');
   globalShortcut.unregister('Alt+E');
@@ -251,7 +294,7 @@ app.whenReady().then(() => {
   ipcMain.handle('save-session', (_event, data) => {
     ensureSessionsDir();
     const file = path.join(getSessionsDir(), `${data.session_id}.json`);
-    fs.writeFileSync(file, JSON.stringify(data, null, 2));
+    writeFileAtomic(file, JSON.stringify(data, null, 2));
 
     return { ok: true, path: file };
   });

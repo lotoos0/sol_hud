@@ -31,6 +31,17 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [0.20.2] - 2026-05-09
+
+### Fixed
+
+- Made session JSON saves atomic by writing to a temporary file before renaming.
+- Debounced window position saves during drag operations and flush pending position on close.
+- Added explicit quest definition load errors with a renderer fallback message instead of an uncaught startup crash.
+- Updated visible application version documentation to `0.20.2`.
+
+---
+
 ## [0.20.1] - 2026-05-09
 
 ### Fixed
@@ -451,7 +462,8 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ---
 
-[Unreleased]: https://github.com/lotoos0/sol_hud/compare/v0.20.1...HEAD
+[Unreleased]: https://github.com/lotoos0/sol_hud/compare/v0.20.2...HEAD
+[0.20.2]: https://github.com/lotoos0/sol_hud/compare/v0.20.1...v0.20.2
 [0.20.1]: https://github.com/lotoos0/sol_hud/compare/v0.20.0...v0.20.1
 [0.20.0]: https://github.com/lotoos0/sol_hud/compare/v0.19.0...v0.20.0
 [0.19.0]: https://github.com/lotoos0/sol_hud/compare/v0.18.0...v0.19.0

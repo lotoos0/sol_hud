@@ -643,6 +643,16 @@ function getCosmetics() {
   return Array.isArray(questDefs?.cosmetics) ? questDefs.cosmetics : [];
 }
 
+function getEmptyQuestDefs() {
+  return {
+    mainline: [],
+    side_quests: [],
+    boss_fights: [],
+    achievements: [],
+    cosmetics: []
+  };
+}
+
 function getCosmeticItem(itemId) {
   return getCosmetics().find((item) => item.id === itemId) || null;
 }
@@ -2453,7 +2463,13 @@ async function init() {
   }
 
   playerData = ensurePlayerShape(await window.electronAPI.loadPlayer());
-  questDefs = await window.electronAPI.loadQuestDefs();
+  try {
+    questDefs = await window.electronAPI.loadQuestDefs();
+  } catch (error) {
+    console.error('Quest definitions load failed:', error);
+    questDefs = getEmptyQuestDefs();
+    showToast('Quest data unavailable');
+  }
   questsState = ensureQuestStateShape(await window.electronAPI.loadQuestsState());
   applyOpacity(playerData.hud_opacity);
   applyCosmetics();

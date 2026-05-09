@@ -79,7 +79,19 @@ function saveQuestsState(data) {
 }
 
 function loadQuestDefs() {
-  const defs = JSON.parse(fs.readFileSync(questDefsFile, 'utf8'));
+  let defs;
+
+  try {
+    defs = JSON.parse(fs.readFileSync(questDefsFile, 'utf8'));
+  } catch (error) {
+    const reason =
+      error.code === 'ENOENT'
+        ? `Quest definitions file not found: ${questDefsFile}`
+        : `Quest definitions file could not be loaded: ${error.message}`;
+    const wrappedError = new Error(reason);
+    wrappedError.code = 'QUEST_DEFS_LOAD_FAILED';
+    throw wrappedError;
+  }
 
   return {
     mainline: defs.mainline,
